@@ -34,6 +34,7 @@
     .entity.connection-source{border-color:#00a9c6;outline:4px solid #a6edf6;outline-offset:3px}.entity.connection-target{border-color:#f0ab26;outline:4px solid #ffe0a1;outline-offset:3px}
     .entity{overflow:visible}.entity header{border-radius:9px 9px 0 0}.rel-port{position:absolute;right:-14px;top:50%;z-index:5;display:grid;place-items:center;width:27px;height:27px;transform:translateY(-50%);border:2px solid #fff;border-radius:50%;background:#3869e8;color:#fff;font-size:18px;font-weight:800;box-shadow:0 3px 9px #17365233}.rel-port:hover{background:#00a9c6;transform:translateY(-50%) scale(1.12)}
     .relation-helper{position:absolute;z-index:6;top:12px;right:12px;display:flex;align-items:center;gap:8px;padding:9px 10px;border:1px solid #c9d9f1;border-radius:10px;background:#fff;box-shadow:0 5px 16px #1736521c;font-size:12px}.relation-helper b{color:#2453c9}
+    .attribute-editor{margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:10px;background:#f8faff}.attribute-row{display:grid;grid-template-columns:minmax(120px,1fr) 150px minmax(150px,1fr) 34px;gap:7px;align-items:center;margin:7px 0}.attribute-row input,.attribute-row select{width:100%;padding:8px;border:1px solid #cbd7e4;border-radius:7px;background:#fff}.attribute-row .delete-attribute{width:32px;height:32px;padding:0;color:#ad3d32}.attribute-add{display:flex;gap:8px;margin-top:10px}.attribute-add input{flex:1}@media(max-width:600px){.attribute-row{grid-template-columns:1fr 1fr 32px}.attribute-row .fk-reference{grid-column:1/-1}}
     .schema-card{margin-top:14px;border:1px solid var(--line);border-radius:12px;overflow:hidden}.schema-card h3{margin:0;padding:10px 12px;background:#edf3ff;font-size:14px}.schema-card table{width:100%;border-collapse:collapse;font-size:12px}.schema-card td,.schema-card th{padding:8px 11px;border-top:1px solid var(--line);text-align:left}.schema-card th{color:var(--muted);font-weight:700}.export-list{display:grid;gap:9px;margin-top:15px}.export-list .button{text-align:left;padding:11px 12px}.uml-canvas{height:440px;position:relative;margin-top:14px;overflow:hidden;border:2px dashed #dce6f0;border-radius:12px;background:#fafcff}.uml-class{position:absolute;z-index:2;min-width:170px;border:2px solid #617eaa;border-radius:8px;background:white;box-shadow:0 4px 10px #17365218}.uml-class h4{margin:0;padding:8px 10px;border-bottom:1px solid var(--line);text-align:center;background:#f0f5fc}.uml-class ul{list-style:none;margin:0;padding:8px 10px;font:12px ui-monospace,monospace;line-height:1.65}.uml-links{position:absolute;inset:0;width:100%;height:100%;z-index:1}.uml-links line{stroke:#617eaa;stroke-width:1.5}.uml-links text{fill:#3d587d;font-size:11px}.code-tools{display:flex;align-items:center;gap:9px;margin-top:14px}.code-tools select{padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff}
   </style>
 </head>
@@ -70,9 +71,22 @@ let editingId = null;
 let selected = [];
 let copiedNodes = null;
 let relationDraft = null;
+let attributeDraft = [];
 function escapeHtml(value) { return String(value).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 function saveData() { localStorage.setItem(storeKey, JSON.stringify(data)); updateCoach(); }
 function entityName(id) { const entity = data.entities.find(e => e.id === id); return entity ? entity.name : id; }
+function normalizeAttribute(attribute) {
+  if (typeof attribute === "object" && attribute) return {name:attribute.name || "attribut", kind:attribute.kind || "value", ref:attribute.ref || ""};
+  const text = String(attribute || "attribut").trim();
+  return {name:text.replace(/ \(PK\)| \(FK\)/g, ""), kind:text.includes("(PK)") ? "pk" : text.includes("(FK)") ? "fk" : "value", ref:""};
+}
+function attrName(attribute) { return normalizeAttribute(attribute).name; }
+function attrKind(attribute) { return normalizeAttribute(attribute).kind; }
+function attrRef(attribute) { return normalizeAttribute(attribute).ref; }
+function attrLabel(attribute) {
+  const attr = normalizeAttribute(attribute);
+  return attr.name + (attr.kind === "pk" ? " (PK)" : attr.kind === "fk" ? " (FK" + (attr.ref ? " → " + attr.ref : "") + ")" : "");
+}
 function showToast(text) { $("#toast").textContent = text; $("#toast").classList.add("show"); setTimeout(() => $("#toast").classList.remove("show"), 2200); }
 function nodeKey(kind, id) { return kind + ":" + id; }
 function isSelected(kind, id) { return selected.includes(nodeKey(kind, id)); }
@@ -133,6 +147,7 @@ function pasteSelection() {
 }
 function ensureLayout() {
   data.entities.forEach((entity, index) => {
+    entity.attrs = (entity.attrs || []).map(normalizeAttribute);
     if (typeof entity.x !== "number") entity.x = 5 + (index % 3) * 32;
     if (typeof entity.y !== "number") entity.y = 9 + Math.floor(index / 3) * 43;
   });
@@ -193,7 +208,7 @@ function renderER() {
   const positions = new Map(data.entities.map(entity => [entity.id, {left:entity.x, top:entity.y}]));
   const entities = data.entities.map((entity) => {
     const position = positions.get(entity.id), left = position.left, top = position.top;
-    const attributes = entity.attrs.map(attr => "<li>" + escapeHtml(attr) + "</li>").join("");
+    const attributes = entity.attrs.map(attr => "<li>" + escapeHtml(attrLabel(attr)) + "</li>").join("");
     const selectedClass = isSelected("entity", entity.id) ? " selected" : "";
     const draftClass = relationDraft?.from === entity.id ? " connection-source" : relationDraft?.targets.includes(entity.id) ? " connection-target" : "";
     const port = relationDraft ? '<button class="rel-port" data-connect="' + entity.id + '" title="Für Relation auswählen">＋</button>' : "";
@@ -221,7 +236,7 @@ function renderER() {
   $("#configureRelation")?.addEventListener("click", configureDraftRelation);
   enableDragging();
 }
-function fieldName(attribute) { return attribute.replace(" (PK)", "").trim().replace(/\s+/g, "_"); }
+function fieldName(attribute) { return attrName(attribute).trim().replace(/\s+/g, "_"); }
 function sqlType(attribute) {
   const name = fieldName(attribute).toLowerCase();
   if (name.endsWith("_id") || name === "id") return "INTEGER";
@@ -229,24 +244,24 @@ function sqlType(attribute) {
   if (name.includes("aktiv") || name.startsWith("ist_")) return "BOOLEAN";
   return "TEXT";
 }
-function primaryKey(entity) { return fieldName(entity.attrs.find(attribute => attribute.includes("(PK)")) || "id"); }
+function primaryKey(entity) { return fieldName(entity.attrs.find(attribute => attrKind(attribute) === "pk") || "id"); }
 function sqlSchema() {
   return data.entities.map(entity => {
-    const columns = entity.attrs.map(attribute => "  " + fieldName(attribute) + " " + sqlType(attribute) + (attribute.includes("(PK)") ? " PRIMARY KEY" : " NOT NULL"));
+    const columns = entity.attrs.map(attribute => "  " + fieldName(attribute) + " " + sqlType(attribute) + (attrKind(attribute) === "pk" ? " PRIMARY KEY" : " NOT NULL"));
     const foreignKeys = data.relations.filter(relation => relation.to === entity.id).map(relation => "  FOREIGN KEY (" + relation.from + "_id) REFERENCES " + relation.from + "(" + primaryKey(data.entities.find(item => item.id === relation.from)) + ")");
     return "CREATE TABLE " + entity.id + " (\n" + columns.concat(foreignKeys).join(",\n") + "\n);";
   }).join("\n\n");
 }
 function prologSchema() {
   const entities = data.entities.map(entity => "entity(" + entity.id + ").").join("\n");
-  const attributes = data.entities.flatMap(entity => entity.attrs.map(attribute => "attribute(" + entity.id + ", " + fieldName(attribute) + ", " + sqlType(attribute).toLowerCase() + ", " + (attribute.includes("(PK)") ? "primary_key" : "required") + ").")).join("\n");
+  const attributes = data.entities.flatMap(entity => entity.attrs.map(attribute => "attribute(" + entity.id + ", " + fieldName(attribute) + ", " + sqlType(attribute).toLowerCase() + ", " + (attrKind(attribute) === "pk" ? "primary_key" : attrKind(attribute) === "fk" ? "foreign_key" : "required") + ").")).join("\n");
   const relations = data.relations.map(relation => "relation(" + relation.from + ", " + relation.to + ", " + relation.name.replace(/\s+/g, "_") + ", '" + relation.card + "').").join("\n");
   return "% ER Lab Schema\n\n" + entities + "\n\n" + attributes + "\n\n" + relations + "\n";
 }
 function renderTable() {
   const cards = data.entities.map(entity => {
     const foreignKeys = data.relations.filter(relation => relation.to === entity.id);
-    const rows = entity.attrs.map(attribute => "<tr><td>" + escapeHtml(fieldName(attribute)) + "</td><td>" + sqlType(attribute) + "</td><td>" + (attribute.includes("(PK)") ? '<span class="key">PK</span>' : "—") + "</td><td>NOT NULL</td></tr>").join("") + foreignKeys.map(relation => "<tr><td>" + escapeHtml(relation.from) + "_id</td><td>INTEGER</td><td><span class=\"key\">FK</span></td><td>→ " + escapeHtml(relation.from) + "(" + escapeHtml(primaryKey(data.entities.find(item => item.id === relation.from))) + ")</td></tr>").join("");
+    const rows = entity.attrs.map(attribute => "<tr><td>" + escapeHtml(fieldName(attribute)) + "</td><td>" + sqlType(attribute) + "</td><td>" + (attrKind(attribute) === "pk" ? '<span class="key">PK</span>' : attrKind(attribute) === "fk" ? '<span class="key">FK</span>' : "—") + "</td><td>" + (attrKind(attribute) === "fk" && attrRef(attribute) ? "→ " + escapeHtml(attrRef(attribute)) : "NOT NULL") + "</td></tr>").join("") + foreignKeys.map(relation => "<tr><td>" + escapeHtml(relation.from) + "_id</td><td>INTEGER</td><td><span class=\"key\">FK</span></td><td>→ " + escapeHtml(relation.from) + "(" + escapeHtml(primaryKey(data.entities.find(item => item.id === relation.from))) + ")</td></tr>").join("");
     return '<article class="schema-card"><h3>' + escapeHtml(entity.name) + " <span class=\"muted\">(" + escapeHtml(entity.id) + ')</span></h3><table><thead><tr><th>Spalte</th><th>Typ</th><th>Schlüssel</th><th>Regel</th></tr></thead><tbody>' + rows + "</tbody></table></article>";
   }).join("");
   $("#tablePanel").innerHTML = '<div class="info"><b>Relationales Schema:</b> Datentypen und Schlüssel werden aus den Attributen abgeleitet. Fremdschlüssel liegen auf der Zielseite einer 1:n-Beziehung.</div>' + cards + '<div class="code-tools"><button class="button" id="copySql">SQL kopieren</button><button class="button" id="downloadSql">⇩ SQL exportieren</button><button class="button" id="downloadProlog">⇩ Prolog exportieren</button></div><pre class="code">' + escapeHtml(sqlSchema()) + "</pre>";
@@ -296,16 +311,45 @@ function updateCoach() {
   if (data.relations.length) message = ["Modell wächst!", "Wechsle zu Tabellen und prüfe die Fremdschlüssel."];
   $("#coachTitle").textContent = message[0]; $("#coachText").textContent = message[1];
 }
+function foreignKeyOptions() {
+  return data.entities.flatMap(entity => (entity.attrs || []).map(normalizeAttribute).filter(attribute => attribute.kind === "pk").map(attribute => '<option value="' + escapeHtml(entity.name + "." + attribute.name) + '"></option>')).join("");
+}
+function attributeEditorHtml() {
+  return '<label>Attribute</label><div class="attribute-editor"><div id="attributeRows"></div><datalist id="foreignKeyOptions">' + foreignKeyOptions() + '</datalist><div class="attribute-add"><input id="newAttribute" placeholder="Attributname eingeben, Komma trennt mehrere"><button class="button" type="button" id="addAttributeRow">＋ Attribut</button></div></div>';
+}
+function drawAttributeRows() {
+  const rows = $("#attributeRows"); if (!rows) return;
+  rows.innerHTML = attributeDraft.map((attribute, index) => '<div class="attribute-row" data-attribute-index="' + index + '"><input class="attribute-name" value="' + escapeHtml(attribute.name) + '" placeholder="Attribut"><select class="attribute-kind"><option value="value"' + (attribute.kind === "value" ? " selected" : "") + '>Wert</option><option value="pk"' + (attribute.kind === "pk" ? " selected" : "") + '>Primärschlüssel</option><option value="fk"' + (attribute.kind === "fk" ? " selected" : "") + '>Fremdschlüssel</option></select><input class="fk-reference" list="foreignKeyOptions" value="' + escapeHtml(attribute.ref || "") + '" placeholder="Klasse.attribut" ' + (attribute.kind === "fk" ? "" : "disabled") + '><button class="button delete-attribute" type="button" title="Attribut löschen">×</button></div>').join("");
+  $$(".attribute-row").forEach(row => {
+    const index = Number(row.dataset.attributeIndex), name = row.querySelector(".attribute-name"), kind = row.querySelector(".attribute-kind"), ref = row.querySelector(".fk-reference");
+    name.oninput = () => attributeDraft[index].name = name.value;
+    name.onkeydown = event => { if (event.key === "Delete" && !name.value) { attributeDraft.splice(index, 1); drawAttributeRows(); } };
+    kind.onchange = () => { attributeDraft[index].kind = kind.value; if (kind.value !== "fk") attributeDraft[index].ref = ""; drawAttributeRows(); };
+    ref.oninput = () => attributeDraft[index].ref = ref.value;
+    row.querySelector(".delete-attribute").onclick = () => { attributeDraft.splice(index, 1); drawAttributeRows(); };
+  });
+}
+function setupAttributeEditor(attributes) {
+  attributeDraft = (attributes || []).map(normalizeAttribute);
+  if (!attributeDraft.length) attributeDraft = [{name:"id", kind:"pk", ref:""}];
+  drawAttributeRows();
+  const add = value => value.split(",").map(name => name.trim()).filter(Boolean).forEach(name => attributeDraft.push({name, kind:"value", ref:""}));
+  $("#addAttributeRow").onclick = () => { add($("#newAttribute").value); $("#newAttribute").value = ""; drawAttributeRows(); };
+  $("#newAttribute").onkeydown = event => { if (event.key === "Enter" || event.key === ",") { event.preventDefault(); add($("#newAttribute").value); $("#newAttribute").value = ""; drawAttributeRows(); } };
+  $("#newAttribute").oninput = event => { if (event.target.value.includes(",")) { add(event.target.value); event.target.value = ""; drawAttributeRows(); } };
+}
 function input(label, id, placeholder) { return '<label>' + label + '<input id="' + id + '" placeholder="' + placeholder + '" required></label>'; }
 function openEditor(kind, id = null) {
   editing = kind; editingId = id; $("#editorModal").classList.remove("hidden");
   if (kind === "entity" || kind === "editEntity") {
     const entity = kind === "editEntity" ? data.entities.find(item => item.id === id) : null;
     $("#formTitle").textContent = entity ? "Entität bearbeiten" : "Neue Entität";
-    $("#formFields").innerHTML = '<label>Name<input id="entityName" value="' + escapeHtml(entity?.name || "") + '" placeholder="z. B. Kurs" required></label><label>Attribute (Komma getrennt)<input id="entityAttrs" value="' + escapeHtml(entity?.attrs.join(", ") || "") + '" placeholder="z. B. kurs_id (PK), titel" required></label>';
+    $("#formFields").innerHTML = '<label>Name<input id="entityName" value="' + escapeHtml(entity?.name || "") + '" placeholder="z. B. Kurs" required></label>' + attributeEditorHtml();
+    setupAttributeEditor(entity?.attrs || []);
   } else if (kind === "attribute") {
     $("#formTitle").textContent = "Attribut ergänzen";
-    $("#formFields").innerHTML = '<label>Entität<select id="attributeTarget">' + data.entities.map(e => '<option value="' + e.id + '">' + escapeHtml(e.name) + "</option>").join("") + "</select></label>" + input("Attribut", "attributeName", "z. B. geburtsdatum");
+    $("#formFields").innerHTML = '<label>Entität<select id="attributeTarget">' + data.entities.map(e => '<option value="' + e.id + '">' + escapeHtml(e.name) + "</option>").join("") + '</select></label>' + input("Attribut", "attributeName", "z. B. geburtsdatum") + '<label>Art<select id="attributeKind"><option value="value">Wert</option><option value="pk">Primärschlüssel</option><option value="fk">Fremdschlüssel</option></select></label><label id="attributeRefWrap" hidden>Referenz <input id="attributeRef" list="foreignKeyOptions" placeholder="Klasse.attribut"></label><datalist id="foreignKeyOptions">' + foreignKeyOptions() + '</datalist>';
+    $("#attributeKind").onchange = event => $("#attributeRefWrap").hidden = event.target.value !== "fk";
   } else if (kind === "draftRelation") {
     $("#formTitle").textContent = "Relation einstellen";
     $("#formFields").innerHTML = '<p class="muted">Von <b>' + escapeHtml(entityName(relationDraft.from)) + '</b> zu <b>' + relationDraft.targets.map(entityName).map(escapeHtml).join(", ") + "</b></p>" + input("Name der Beziehung", "relationName", "z. B. belegt") + '<label>Kardinalität<select id="relationCard"><option>1 : 1</option><option>1 : n</option><option>n : m</option></select></label>';
@@ -320,15 +364,14 @@ function openEditor(kind, id = null) {
 $("#saveForm").onclick = () => {
   if (editing === "entity") {
     const name = $("#entityName").value.trim(); if (!name) return;
-    const attrs = $("#entityAttrs").value.split(",").map(x => x.trim()).filter(Boolean);
-    data.entities.push({id:name.toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + Date.now(), name, attrs:attrs.length ? attrs : ["id (PK)"]});
+    data.entities.push({id:name.toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + Date.now(), name, attrs:attributeDraft.filter(attribute => attribute.name.trim())});
   } else if (editing === "editEntity") {
     const entity = data.entities.find(item => item.id === editingId);
-    const name = $("#entityName").value.trim(), attrs = $("#entityAttrs").value.split(",").map(x => x.trim()).filter(Boolean);
-    if (!entity || !name) return; entity.name = name; entity.attrs = attrs.length ? attrs : ["id (PK)"];
+    const name = $("#entityName").value.trim(), attrs = attributeDraft.filter(attribute => attribute.name.trim());
+    if (!entity || !name) return; entity.name = name; entity.attrs = attrs;
   } else if (editing === "attribute") {
     const target = data.entities.find(e => e.id === $("#attributeTarget").value), attr = $("#attributeName").value.trim();
-    if (!attr) return; target.attrs.push(attr);
+    if (!attr) return; target.attrs.push({name:attr, kind:$("#attributeKind").value, ref:$("#attributeRef").value.trim()});
   } else if (editing === "relation") {
     const from = $("#relationFrom").value, to = $("#relationTo").value, name = $("#relationName").value.trim();
     if (!name || from === to) { showToast("Wähle zwei unterschiedliche Entitäten und einen Namen."); return; }
