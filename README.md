@@ -10,6 +10,3 @@ anzeigen, Datensätze aus Sprache ableiten und Normalisierung üben.
 2. In **Settings → Pages** bei **Build and deployment** die Option
    **GitHub Actions** auswählen.
 3. Jeder Push auf `main` veröffentlicht den Inhalt von `dist/`.
-
-Es gibt keinen Build-Schritt, kein Backend und keine Plattformbindung. Modelle und
-Übungsdatensätze werden ausschließlich im `localStorage` des jeweiligen Browsers gespeichert.
