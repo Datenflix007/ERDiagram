@@ -30,11 +30,13 @@
     .hero h2{font-size:19px}
     @media(max-width:980px){.top{grid-template-columns:1fr auto;gap:10px}.modes{grid-column:1/-1;grid-row:2;justify-self:start}.header-tools{grid-column:1/-1;grid-row:3;justify-self:start;flex-wrap:wrap}.top-status{display:none}.canvas{height:580px;min-height:0}}
     @media(max-width:600px){.header-tools .button:not(.coach-toggle){font-size:0;width:36px;height:36px;padding:0}.header-tools .button:not(.coach-toggle)::first-letter{font-size:16px}}
+    .entity.selected,.relation.selected{outline:4px solid #9fc0ff;outline-offset:3px}
+    .schema-card{margin-top:14px;border:1px solid var(--line);border-radius:12px;overflow:hidden}.schema-card h3{margin:0;padding:10px 12px;background:#edf3ff;font-size:14px}.schema-card table{width:100%;border-collapse:collapse;font-size:12px}.schema-card td,.schema-card th{padding:8px 11px;border-top:1px solid var(--line);text-align:left}.schema-card th{color:var(--muted);font-weight:700}.export-list{display:grid;gap:9px;margin-top:15px}.export-list .button{text-align:left;padding:11px 12px}.uml-canvas{height:440px;position:relative;margin-top:14px;overflow:hidden;border:2px dashed #dce6f0;border-radius:12px;background:#fafcff}.uml-class{position:absolute;z-index:2;min-width:170px;border:2px solid #617eaa;border-radius:8px;background:white;box-shadow:0 4px 10px #17365218}.uml-class h4{margin:0;padding:8px 10px;border-bottom:1px solid var(--line);text-align:center;background:#f0f5fc}.uml-class ul{list-style:none;margin:0;padding:8px 10px;font:12px ui-monospace,monospace;line-height:1.65}.uml-links{position:absolute;inset:0;width:100%;height:100%;z-index:1}.uml-links line{stroke:#617eaa;stroke-width:1.5}.uml-links text{fill:#3d587d;font-size:11px}.code-tools{display:flex;align-items:center;gap:9px;margin-top:14px}.code-tools select{padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff}
   </style>
 </head>
 <body>
 <div class="app">
-  <header class="top"><div class="brand"><div class="logo">ER</div><div><h1>ER Lab</h1><p class="muted">Modellieren · übersetzen · verstehen</p></div></div><div class="modes" aria-label="Darstellung wechseln"><button class="active" data-mode="er">ER-Diagramm</button><button data-mode="table">Relationen</button><button data-mode="oop">OOP-Klassen</button></div><div class="header-tools"><button class="button primary" id="addEntity">＋ Entität</button><button class="button" id="addRelation">◇ Relation</button><button class="button" id="addAttribute">＋ Attribut</button><button class="button" id="reset" title="Modell zurücksetzen">↺</button><button class="button coach-toggle" id="toggleCoach">☰ Coach</button><span class="muted top-status">● Gespeichert</span></div></header>
+  <header class="top"><div class="brand"><div class="logo">ER</div><div><h1>ER Lab</h1><p class="muted">Modellieren · übersetzen · verstehen</p></div></div><div class="modes" aria-label="Darstellung wechseln"><button class="active" data-mode="er">ER-Diagramm</button><button data-mode="table">Relationen</button><button data-mode="oop">UML & Code</button></div><div class="header-tools"><button class="button primary" id="addEntity">＋ Entität</button><button class="button" id="addRelation">◇ Relation</button><button class="button" id="addAttribute">＋ Attribut</button><button class="button" id="exportModel">⇩ Export</button><button class="button" id="reset" title="Modell zurücksetzen">↺</button><button class="button coach-toggle" id="toggleCoach">☰ Coach</button><span class="muted top-status">● Gespeichert</span></div></header>
   <div class="layout">
     <main>
       <section class="card hero"><div><h2 id="title">Baue dein ER-Modell</h2><p class="muted" id="sub">Starte mit Dingen aus der echten Welt – noch ohne Tabellen.</p></div></section>
@@ -51,6 +53,7 @@
 <button class="drawer-backdrop" id="drawerBackdrop" aria-label="Coach schließen"></button>
 <div class="modal" id="tourModal"><div class="box"><span class="muted">Willkommen im ER Lab · 1 von 3</span><h2>Vom Alltag zur Datenbank.</h2><p class="muted">Zeichne dein Modell, wechsle die Perspektive und erhalte Hinweise – ideal für den Einstieg oder selbstständige Übungen.</p><div class="tour"><b>Entität</b> = ein Ding, z. B. Buch<br><b>Relation</b> = eine Verbindung, z. B. leiht aus<br><b>Attribut</b> = eine Eigenschaft, z. B. Titel</div><div class="actions"><button class="button" data-close="tourModal">Tutorial überspringen</button><button class="button primary" data-close="tourModal">Loslegen →</button></div></div></div>
 <div class="modal hidden" id="editorModal"><div class="box"><span class="muted">Modell bearbeiten</span><h2 id="formTitle">Neue Entität</h2><div class="form" id="formFields"></div><div class="actions"><button class="button" data-close="editorModal">Abbrechen</button><button class="button primary" id="saveForm">Hinzufügen</button></div></div></div>
+<div class="modal hidden" id="exportModal"><div class="box"><span class="muted">Dateien mit Modell und Anordnung</span><h2>Exportieren</h2><p class="muted">JSON enthält das vollständige ER-Modell inklusive der frei gewählten Positionen. SQL und Prolog beschreiben das relationale Schema.</p><div class="export-list"><button class="button primary" id="exportJson">⇩ ER-Modell als JSON</button><button class="button" id="exportSql">⇩ Datenbankschema als SQL</button><button class="button" id="exportProlog">⇩ Datenbankschema als Prolog</button></div><div class="actions"><span></span><button class="button" data-close="exportModal">Schließen</button></div></div></div>
 <div class="toast" id="toast"></div>
 <script>
 const $ = s => document.querySelector(s);
@@ -60,10 +63,20 @@ const initial = {entities:[{id:"student",name:"Schüler:in",attrs:["schueler_id 
 let data = JSON.parse(localStorage.getItem(storeKey) || JSON.stringify(initial));
 let mode = "er";
 let editing = "";
+let selected = null;
 function escapeHtml(value) { return String(value).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 function saveData() { localStorage.setItem(storeKey, JSON.stringify(data)); updateCoach(); }
 function entityName(id) { const entity = data.entities.find(e => e.id === id); return entity ? entity.name : id; }
 function showToast(text) { $("#toast").textContent = text; $("#toast").classList.add("show"); setTimeout(() => $("#toast").classList.remove("show"), 2200); }
+function downloadFile(filename, content, mime) {
+  const url = URL.createObjectURL(new Blob([content], {type:mime + ";charset=utf-8"}));
+  const link = document.createElement("a"); link.href = url; link.download = filename; link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 500);
+}
+function diagramJSON() {
+  ensureLayout();
+  return JSON.stringify({format:"er-lab/v1", exportedAt:new Date().toISOString(), diagram:data}, null, 2);
+}
 function ensureLayout() {
   data.entities.forEach((entity, index) => {
     if (typeof entity.x !== "number") entity.x = 5 + (index % 3) * 32;
@@ -87,6 +100,9 @@ function renderConnections() {
 }
 function enableDragging() {
   const panel = $("#erPanel");
+  panel.onpointerdown = event => {
+    if (event.target === panel) { selected = null; $$(".selected").forEach(node => node.classList.remove("selected")); }
+  };
   $$("[data-drag]").forEach(element => element.onpointerdown = event => {
     if (event.target.closest(".remove")) return;
     const kind = element.dataset.drag, id = element.dataset.dragId;
@@ -95,14 +111,24 @@ function enableDragging() {
     const rect = panel.getBoundingClientRect();
     const offsetX = event.clientX - rect.left - item.x / 100 * rect.width;
     const offsetY = event.clientY - rect.top - item.y / 100 * rect.height;
+    const startX = event.clientX, startY = event.clientY; let moved = false;
     element.setPointerCapture(event.pointerId); element.classList.add("dragging");
     const move = pointer => {
+      if (Math.hypot(pointer.clientX - startX, pointer.clientY - startY) > 5) moved = true;
       const maxX = kind === "entity" ? 79 : 88, maxY = kind === "entity" ? 82 : 90;
       item.x = Math.max(1, Math.min(maxX, (pointer.clientX - rect.left - offsetX) / rect.width * 100));
       item.y = Math.max(2, Math.min(maxY, (pointer.clientY - rect.top - offsetY) / rect.height * 100));
       element.style.left = item.x + "%"; element.style.top = item.y + "%"; renderConnections();
     };
-    const stop = () => { element.classList.remove("dragging"); saveData(); };
+    const stop = () => {
+      element.classList.remove("dragging");
+      if (!moved) {
+        selected = kind + ":" + id;
+        $$(".selected").forEach(node => node.classList.remove("selected"));
+        element.classList.add("selected");
+      }
+      saveData();
+    };
     element.onpointermove = move; element.onpointerup = stop; element.onpointercancel = stop;
   });
 }
@@ -114,7 +140,8 @@ function renderER() {
   const entities = data.entities.map((entity) => {
     const position = positions.get(entity.id), left = position.left, top = position.top;
     const attributes = entity.attrs.map(attr => "<li>" + escapeHtml(attr) + "</li>").join("");
-    return '<article class="entity" data-drag="entity" data-drag-id="' + entity.id + '" style="left:' + left + '%;top:' + top + '%"><header>' + escapeHtml(entity.name) + '<button class="remove" data-delete="' + entity.id + '">×</button></header><ul>' + attributes + "</ul></article>";
+    const selectedClass = selected === "entity:" + entity.id ? " selected" : "";
+    return '<article class="entity' + selectedClass + '" data-drag="entity" data-drag-id="' + entity.id + '" style="left:' + left + '%;top:' + top + '%"><header>' + escapeHtml(entity.name) + '<button class="remove" data-delete="' + entity.id + '">×</button></header><ul>' + attributes + "</ul></article>";
   }).join("");
   const relationLayout = data.relations.map((relation) => {
     const from = positions.get(relation.from), to = positions.get(relation.to);
@@ -124,7 +151,7 @@ function renderER() {
     const middleX = item.left + 8, middleY = item.top + 4;
     return '<line x1="' + (item.from.left + 10) + '" y1="' + (item.from.top + 11) + '" x2="' + middleX + '" y2="' + middleY + '"/><line x1="' + middleX + '" y1="' + middleY + '" x2="' + (item.to.left + 10) + '" y2="' + (item.to.top + 11) + '"/><circle cx="' + (item.from.left + 10) + '" cy="' + (item.from.top + 11) + '" r="1"/><circle cx="' + (item.to.left + 10) + '" cy="' + (item.to.top + 11) + '" r="1"/>';
   }).join("");
-  const relations = relationLayout.map(item => '<div class="relation" data-drag="relation" data-drag-id="' + item.relation.id + '" style="left:' + item.left + '%;top:' + item.top + '%">◇ ' + escapeHtml(item.relation.name) + "<small>" + escapeHtml(entityName(item.relation.from)) + " " + item.relation.card + " " + escapeHtml(entityName(item.relation.to)) + "</small></div>").join("");
+  const relations = relationLayout.map(item => '<div class="relation' + (selected === "relation:" + item.relation.id ? " selected" : "") + '" data-drag="relation" data-drag-id="' + item.relation.id + '" style="left:' + item.left + '%;top:' + item.top + '%">◇ ' + escapeHtml(item.relation.name) + "<small>" + escapeHtml(entityName(item.relation.from)) + " " + item.relation.card + " " + escapeHtml(entityName(item.relation.to)) + "</small></div>").join("");
   panel.innerHTML = '<svg class="connections" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">' + lines + "</svg>" + entities + relations + '<div class="tip"><b style="color:#7de7f5">Tipp:</b> Beziehungen mit Verben benennen; Kardinalitäten erklären „wie viele?“</div>';
   $$("[data-delete]").forEach(button => button.onclick = () => {
     const id = button.dataset.delete;
@@ -134,21 +161,66 @@ function renderER() {
   });
   enableDragging();
 }
+function fieldName(attribute) { return attribute.replace(" (PK)", "").trim().replace(/\s+/g, "_"); }
+function sqlType(attribute) {
+  const name = fieldName(attribute).toLowerCase();
+  if (name.endsWith("_id") || name === "id") return "INTEGER";
+  if (name.includes("datum") || name.endsWith("_am") || name.includes("date")) return "DATE";
+  if (name.includes("aktiv") || name.startsWith("ist_")) return "BOOLEAN";
+  return "TEXT";
+}
+function primaryKey(entity) { return fieldName(entity.attrs.find(attribute => attribute.includes("(PK)")) || "id"); }
+function sqlSchema() {
+  return data.entities.map(entity => {
+    const columns = entity.attrs.map(attribute => "  " + fieldName(attribute) + " " + sqlType(attribute) + (attribute.includes("(PK)") ? " PRIMARY KEY" : " NOT NULL"));
+    const foreignKeys = data.relations.filter(relation => relation.to === entity.id).map(relation => "  FOREIGN KEY (" + relation.from + "_id) REFERENCES " + relation.from + "(" + primaryKey(data.entities.find(item => item.id === relation.from)) + ")");
+    return "CREATE TABLE " + entity.id + " (\n" + columns.concat(foreignKeys).join(",\n") + "\n);";
+  }).join("\n\n");
+}
+function prologSchema() {
+  const entities = data.entities.map(entity => "entity(" + entity.id + ").").join("\n");
+  const attributes = data.entities.flatMap(entity => entity.attrs.map(attribute => "attribute(" + entity.id + ", " + fieldName(attribute) + ", " + sqlType(attribute).toLowerCase() + ", " + (attribute.includes("(PK)") ? "primary_key" : "required") + ").")).join("\n");
+  const relations = data.relations.map(relation => "relation(" + relation.from + ", " + relation.to + ", " + relation.name.replace(/\s+/g, "_") + ", '" + relation.card + "').").join("\n");
+  return "% ER Lab Schema\n\n" + entities + "\n\n" + attributes + "\n\n" + relations + "\n";
+}
 function renderTable() {
-  const headers = data.entities.map(entity => "<th>" + escapeHtml(entity.name) + "</th>").join("");
-  const cells = data.entities.map(entity => {
-    const attrs = entity.attrs.map(attr => "<div>" + (attr.includes("(PK)") ? '<span class="key">PK</span> ' : "") + escapeHtml(attr.replace(" (PK)", "")) + "</div>").join("");
-    const foreignKeys = data.relations.filter(relation => relation.to === entity.id).map(relation => '<div><span class="key">FK</span> ' + escapeHtml(relation.from) + "_id</div>").join("");
-    return "<td><b>" + escapeHtml(entity.name) + "</b><br>" + attrs + foreignKeys + "</td>";
+  const cards = data.entities.map(entity => {
+    const foreignKeys = data.relations.filter(relation => relation.to === entity.id);
+    const rows = entity.attrs.map(attribute => "<tr><td>" + escapeHtml(fieldName(attribute)) + "</td><td>" + sqlType(attribute) + "</td><td>" + (attribute.includes("(PK)") ? '<span class="key">PK</span>' : "—") + "</td><td>NOT NULL</td></tr>").join("") + foreignKeys.map(relation => "<tr><td>" + escapeHtml(relation.from) + "_id</td><td>INTEGER</td><td><span class=\"key\">FK</span></td><td>→ " + escapeHtml(relation.from) + "(" + escapeHtml(primaryKey(data.entities.find(item => item.id === relation.from))) + ")</td></tr>").join("");
+    return '<article class="schema-card"><h3>' + escapeHtml(entity.name) + " <span class=\"muted\">(" + escapeHtml(entity.id) + ')</span></h3><table><thead><tr><th>Spalte</th><th>Typ</th><th>Schlüssel</th><th>Regel</th></tr></thead><tbody>' + rows + "</tbody></table></article>";
   }).join("");
-  $("#tablePanel").innerHTML = '<div class="info"><b>Übersetzung:</b> Entitäten werden Tabellen. Bei 1:n-Beziehungen trägt die n-Seite den Fremdschlüssel. Für n:m brauchst du eine Zwischentabelle.</div><table class="schema"><tr>' + headers + "</tr><tr>" + cells + "</tr></table>";
+  $("#tablePanel").innerHTML = '<div class="info"><b>Relationales Schema:</b> Datentypen und Schlüssel werden aus den Attributen abgeleitet. Fremdschlüssel liegen auf der Zielseite einer 1:n-Beziehung.</div>' + cards + '<div class="code-tools"><button class="button" id="copySql">SQL kopieren</button><button class="button" id="downloadSql">⇩ SQL exportieren</button><button class="button" id="downloadProlog">⇩ Prolog exportieren</button></div><pre class="code">' + escapeHtml(sqlSchema()) + "</pre>";
+  $("#copySql").onclick = () => navigator.clipboard?.writeText(sqlSchema()).then(() => showToast("SQL in die Zwischenablage kopiert."));
+  $("#downloadSql").onclick = () => downloadFile("er-lab-schema.sql", sqlSchema(), "text/sql");
+  $("#downloadProlog").onclick = () => downloadFile("er-lab-schema.pl", prologSchema(), "text/plain");
+}
+function className(entity) { return entity.name.replace(/[^a-zA-Z0-9]/g, "") || "Entity"; }
+function codeType(attribute, language) {
+  const base = sqlType(attribute);
+  const types = {java:{INTEGER:"Long",DATE:"LocalDate",BOOLEAN:"Boolean",TEXT:"String"},python:{INTEGER:"int",DATE:"date",BOOLEAN:"bool",TEXT:"str"},csharp:{INTEGER:"long",DATE:"DateOnly",BOOLEAN:"bool",TEXT:"string"},cpp:{INTEGER:"long",DATE:"std::string",BOOLEAN:"bool",TEXT:"std::string"}};
+  return types[language][base];
+}
+function generatedCode(language) {
+  const properties = entity => entity.attrs.map(attribute => ({name:fieldName(attribute), type:codeType(attribute, language)})).concat(data.relations.filter(relation => relation.to === entity.id).map(relation => ({name:relation.from, type:className(data.entities.find(item => item.id === relation.from))})));
+  if (language === "python") return data.entities.map(entity => "class " + className(entity) + ":\n    def __init__(self):\n" + properties(entity).map(property => "        self." + property.name + ": " + property.type + " | None = None").join("\n")).join("\n\n");
+  if (language === "csharp") return data.entities.map(entity => "public class " + className(entity) + "\n{\n" + properties(entity).map(property => "    public " + property.type + "? " + property.name.replace(/(^|_)([a-z])/g, (_,a,b) => b.toUpperCase()) + " { get; set; }").join("\n") + "\n}").join("\n\n");
+  if (language === "cpp") return data.entities.map(entity => "class " + className(entity) + " {\npublic:\n" + properties(entity).map(property => "    " + property.type + " " + property.name + ";").join("\n") + "\n};").join("\n\n");
+  return "import java.time.LocalDate;\n\n" + data.entities.map(entity => "public class " + className(entity) + " {\n" + properties(entity).map(property => "    private " + property.type + " " + property.name + ";").join("\n") + "\n}").join("\n\n");
 }
 function renderOOP() {
-  const classes = data.entities.map(entity => {
-    const properties = entity.attrs.map(attr => "    this." + attr.replace(" (PK)", "").replace(/[^a-zA-Z0-9_]/g, "_") + " = null;").join("\n");
-    return "class " + entity.name.replace(/[^a-zA-Z0-9]/g, "") + " {\n  constructor() {\n" + properties + "\n  }\n}";
-  }).join("\n\n");
-  $("#oopPanel").innerHTML = '<div class="info"><b>OOP-Perspektive:</b> Entitäten werden Klassen. Beziehungen kannst du durch Referenzen oder Collections ausdrücken.</div><pre class="code">' + escapeHtml(classes) + "</pre>";
+  const positions = new Map(data.entities.map((entity, index) => [entity.id, {x:12 + (index % 3) * 31, y:12 + Math.floor(index / 3) * 47}]));
+  const links = data.relations.map(relation => {
+    const from = positions.get(relation.from), to = positions.get(relation.to);
+    return '<line x1="' + (from.x + 8) + '%" y1="' + (from.y + 9) + '%" x2="' + (to.x + 8) + '%" y2="' + (to.y + 9) + '%"/><text x="' + ((from.x + to.x) / 2 + 8) + '%" y="' + ((from.y + to.y) / 2 + 6) + '%">' + escapeHtml(relation.name + " " + relation.card) + "</text>";
+  }).join("");
+  const boxes = data.entities.map(entity => {
+    const position = positions.get(entity.id);
+    const fields = entity.attrs.map(attribute => escapeHtml(fieldName(attribute)) + ": " + codeType(attribute, "java")).join("<br>");
+    return '<article class="uml-class" style="left:' + position.x + '%;top:' + position.y + '%"><h4>' + escapeHtml(className(entity)) + "</h4><ul><li>" + fields.replace(/<br>/g, "</li><li>") + "</li></ul></article>";
+  }).join("");
+  $("#oopPanel").innerHTML = '<div class="info"><b>UML-Klassendiagramm:</b> Entitäten sind Klassen; Beziehungen werden als Assoziationen gezeigt. Der Code verwendet Referenzen auf verbundene Klassen, keine Collections.</div><div class="uml-canvas"><svg class="uml-links" viewBox="0 0 100 100" preserveAspectRatio="none">' + links + "</svg>" + boxes + '</div><div class="code-tools"><label>Code: <select id="codeLanguage"><option value="java">Java</option><option value="python">Python</option><option value="csharp">C#</option><option value="cpp">C++</option></select></label><button class="button" id="exportCode">⇩ Code exportieren</button></div><pre class="code" id="generatedCode">' + escapeHtml(generatedCode("java")) + "</pre>";
+  $("#codeLanguage").onchange = event => { $("#generatedCode").textContent = generatedCode(event.target.value); };
+  $("#exportCode").onclick = () => { const language = $("#codeLanguage").value, ext = {java:"java",python:"py",csharp:"cs",cpp:"cpp"}[language]; downloadFile("er-lab-classes." + ext, generatedCode(language), "text/plain"); };
 }
 function render() {
   renderER(); renderTable(); renderOOP();
@@ -215,6 +287,17 @@ $("#convert").onclick = () => {
 $("#check").onclick = () => { $("#feedback").textContent = $("#normal").value === "name" ? "✓ Genau. Der Name hängt von der Schüler-ID ab und gehört in die Entität Schüler:in." : "Noch einmal: Welche Angabe würde sich bei vielen Ausleihen derselben Person wiederholen?"; };
 $("#tutorial").onclick = () => $("#tourModal").classList.remove("hidden");
 $("#reset").onclick = () => { if (confirm("Dein lokales Modell zurücksetzen?")) { data = JSON.parse(JSON.stringify(initial)); saveData(); render(); showToast("Beispielmodell wiederhergestellt."); } };
+$("#exportModel").onclick = () => $("#exportModal").classList.remove("hidden");
+$("#exportJson").onclick = () => downloadFile("er-lab-diagram.json", diagramJSON(), "application/json");
+$("#exportSql").onclick = () => downloadFile("er-lab-schema.sql", sqlSchema(), "text/sql");
+$("#exportProlog").onclick = () => downloadFile("er-lab-schema.pl", prologSchema(), "text/plain");
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") {
+    selected = null; $$(".selected").forEach(node => node.classList.remove("selected"));
+    ["editorModal", "exportModal", "tourModal"].forEach(id => $("#" + id).classList.add("hidden"));
+    setCoach(false);
+  }
+});
 function setCoach(open) {
   $("#coachDrawer").classList.toggle("open", open);
   $("#drawerBackdrop").classList.toggle("show", open);
