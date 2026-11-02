@@ -11,24 +11,44 @@
     .entity,.relation{cursor:grab;touch-action:none;user-select:none}
     .entity.dragging,.relation.dragging{cursor:grabbing;opacity:.9;box-shadow:0 14px 28px #17365235}
     @media(max-width:1050px){.layout{grid-template-columns:1fr}.coach{grid-column:auto}}
+    /* Kompakter Arbeitsmodus: Einstellungen nur bei Bedarf einblenden */
+    .layout{display:block}
+    .top{grid-template-columns:auto 1fr auto;gap:18px}
+    .modes{justify-self:center}
+    .header-tools{justify-self:end;display:flex;align-items:center;gap:7px}
+    .header-tools .button{white-space:nowrap}
+    .coach.drawer{position:fixed;z-index:20;top:14px;right:14px;bottom:14px;width:min(420px,calc(100vw - 28px));overflow-y:auto;border-radius:18px;box-shadow:-12px 0 45px #13243b24;transform:translateX(calc(100% + 32px));transition:transform .24s ease}
+    .coach.drawer.open{transform:translateX(0)}
+    .drawer-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .drawer-head h3{margin:0}
+    .drawer-head .button{width:32px;height:32px;padding:0;font-size:19px}
+    .drawer-backdrop{display:none;position:fixed;inset:0;z-index:19;background:#13243b2e}
+    .drawer-backdrop.show{display:block}
+    .work{padding:15px}
+    .canvas{margin-top:0;height:calc(100vh - 235px);min-height:560px}
+    .hero{padding:14px 20px;margin-bottom:12px}
+    .hero h2{font-size:19px}
+    @media(max-width:980px){.top{grid-template-columns:1fr auto;gap:10px}.modes{grid-column:1/-1;grid-row:2;justify-self:start}.header-tools{grid-column:1/-1;grid-row:3;justify-self:start;flex-wrap:wrap}.top-status{display:none}.canvas{height:580px;min-height:0}}
+    @media(max-width:600px){.header-tools .button:not(.coach-toggle){font-size:0;width:36px;height:36px;padding:0}.header-tools .button:not(.coach-toggle)::first-letter{font-size:16px}}
   </style>
 </head>
 <body>
 <div class="app">
-  <header class="top"><div class="brand"><div class="logo">ER</div><div><h1>ER Lab</h1><p class="muted">Modellieren · übersetzen · verstehen</p></div></div><div class="modes" aria-label="Darstellung wechseln"><button class="active" data-mode="er">ER-Diagramm</button><button data-mode="table">Relationen</button><button data-mode="oop">OOP-Klassen</button></div><span class="muted top-status">● Lokal im Browser gespeichert</span></header>
+  <header class="top"><div class="brand"><div class="logo">ER</div><div><h1>ER Lab</h1><p class="muted">Modellieren · übersetzen · verstehen</p></div></div><div class="modes" aria-label="Darstellung wechseln"><button class="active" data-mode="er">ER-Diagramm</button><button data-mode="table">Relationen</button><button data-mode="oop">OOP-Klassen</button></div><div class="header-tools"><button class="button primary" id="addEntity">＋ Entität</button><button class="button" id="addRelation">◇ Relation</button><button class="button" id="addAttribute">＋ Attribut</button><button class="button" id="reset" title="Modell zurücksetzen">↺</button><button class="button coach-toggle" id="toggleCoach">☰ Coach</button><span class="muted top-status">● Gespeichert</span></div></header>
   <div class="layout">
     <main>
       <section class="card hero"><div><h2 id="title">Baue dein ER-Modell</h2><p class="muted" id="sub">Starte mit Dingen aus der echten Welt – noch ohne Tabellen.</p></div></section>
-      <section class="card work"><div class="toolbar"><button class="button primary" id="addEntity">＋ Entität</button><button class="button" id="addRelation">◇ Relation</button><button class="button" id="addAttribute">＋ Attribut</button><button class="button" id="reset" style="margin-left:auto">↺ Reset</button></div><div class="canvas" id="erPanel"></div><div class="panel" id="tablePanel"></div><div class="panel" id="oopPanel"></div></section>
+      <section class="card work"><div class="canvas" id="erPanel"></div><div class="panel" id="tablePanel"></div><div class="panel" id="oopPanel"></div></section>
     </main>
-    <aside class="card coach">
-      <h3>Feedback-Coach</h3><div class="status"><span class="score" id="score">65%</span><b id="coachTitle">Guter Start!</b><br><span id="coachText">Lege mindestens zwei Entitäten und eine Beziehung an.</span></div>
+    <aside class="card coach drawer" id="coachDrawer" aria-label="Feedback-Coach">
+      <div class="drawer-head"><h3>Feedback-Coach</h3><button class="button" id="closeCoach" aria-label="Coach schließen">×</button></div><div class="status"><span class="score" id="score">65%</span><b id="coachTitle">Guter Start!</b><br><span id="coachText">Lege mindestens zwei Entitäten und eine Beziehung an.</span></div>
       <section class="section"><h3>Sprache → Datensatz</h3><label for="natural">Beschreibe einen Sachverhalt</label><textarea id="natural">Lea aus der 9b leiht am 2. November 2026 das Buch Dune aus.</textarea><button class="button primary" id="convert" style="margin-top:8px;width:100%">Standardisieren</button><div class="json" id="json">{ }</div><div id="records"></div></section>
       <section class="section"><h3>Normalisierungs-Check</h3><p class="muted">Was gehört nicht direkt in eine Ausleihe?</p><select id="normal"><option value="name">Der Name der Schüler:in</option><option value="book">Die Buch-ID</option><option value="date">Das Ausleihdatum</option></select><button class="button" id="check" style="margin-top:8px">Antwort prüfen</button><p class="muted" id="feedback"></p></section>
       <section class="section"><button class="button" id="tutorial">↗ Tutorial erneut starten</button></section>
     </aside>
   </div>
 </div>
+<button class="drawer-backdrop" id="drawerBackdrop" aria-label="Coach schließen"></button>
 <div class="modal" id="tourModal"><div class="box"><span class="muted">Willkommen im ER Lab · 1 von 3</span><h2>Vom Alltag zur Datenbank.</h2><p class="muted">Zeichne dein Modell, wechsle die Perspektive und erhalte Hinweise – ideal für den Einstieg oder selbstständige Übungen.</p><div class="tour"><b>Entität</b> = ein Ding, z. B. Buch<br><b>Relation</b> = eine Verbindung, z. B. leiht aus<br><b>Attribut</b> = eine Eigenschaft, z. B. Titel</div><div class="actions"><button class="button" data-close="tourModal">Tutorial überspringen</button><button class="button primary" data-close="tourModal">Loslegen →</button></div></div></div>
 <div class="modal hidden" id="editorModal"><div class="box"><span class="muted">Modell bearbeiten</span><h2 id="formTitle">Neue Entität</h2><div class="form" id="formFields"></div><div class="actions"><button class="button" data-close="editorModal">Abbrechen</button><button class="button primary" id="saveForm">Hinzufügen</button></div></div></div>
 <div class="toast" id="toast"></div>
@@ -195,6 +215,14 @@ $("#convert").onclick = () => {
 $("#check").onclick = () => { $("#feedback").textContent = $("#normal").value === "name" ? "✓ Genau. Der Name hängt von der Schüler-ID ab und gehört in die Entität Schüler:in." : "Noch einmal: Welche Angabe würde sich bei vielen Ausleihen derselben Person wiederholen?"; };
 $("#tutorial").onclick = () => $("#tourModal").classList.remove("hidden");
 $("#reset").onclick = () => { if (confirm("Dein lokales Modell zurücksetzen?")) { data = JSON.parse(JSON.stringify(initial)); saveData(); render(); showToast("Beispielmodell wiederhergestellt."); } };
+function setCoach(open) {
+  $("#coachDrawer").classList.toggle("open", open);
+  $("#drawerBackdrop").classList.toggle("show", open);
+  $("#toggleCoach").setAttribute("aria-expanded", String(open));
+}
+$("#toggleCoach").onclick = () => setCoach(!$("#coachDrawer").classList.contains("open"));
+$("#closeCoach").onclick = () => setCoach(false);
+$("#drawerBackdrop").onclick = () => setCoach(false);
 render(); updateCoach();
 </script>
 </body></html>
