@@ -6,16 +6,17 @@
   <title>ER Lab · Datenmodellierung</title>
   <style>
     :root{--ink:#13243b;--muted:#66778d;--blue:#3869e8;--cyan:#00a9c6;--bg:#f4f7fb;--line:#dce5ee;--gold:#ffc857;--mint:#dcf8ed}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px Inter,system-ui,sans-serif}button,input,textarea,select{font:inherit}button{border:0;cursor:pointer}.app{max-width:1450px;margin:auto;padding:22px}.top{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin-bottom:18px}.brand{display:flex;align-items:center;gap:11px}.logo{display:grid;place-items:center;width:45px;height:45px;border-radius:14px;background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;font-weight:900}.brand h1{margin:0;font-size:21px}.muted{font-size:12px;color:var(--muted)}.brand p{margin:2px 0}.top-status{justify-self:end}.layout{display:grid;grid-template-columns:220px minmax(0,1fr) 330px;gap:16px}.card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 21px #1936540b}.nav{padding:12px}.nav button{width:100%;padding:11px;text-align:left;background:transparent;border-radius:10px;font-weight:650;color:var(--ink)}.nav button.active{background:#eaf0ff;color:#2552c9}.badge{display:inline-grid;place-items:center;width:24px;height:24px;margin-right:7px;border-radius:7px;background:#edf1f6;font-size:11px}.active .badge{background:var(--blue);color:white}.mission{margin-top:12px;padding:13px;border-radius:11px;background:var(--mint);font-size:12px;line-height:1.5}.hero{padding:18px 20px;margin-bottom:15px}.hero h2{margin:0 0 4px;font-size:21px}.modes{display:flex;gap:3px;padding:4px;border-radius:10px;background:#e8eef6;height:min-content;box-shadow:inset 0 0 0 1px #dfe7f1}.modes button{padding:8px 12px;border-radius:7px;background:transparent;color:#52637a;font-size:12px}.modes .active{background:#fff;color:var(--blue);font-weight:800;box-shadow:0 1px 4px #2039561c}.work{padding:15px}.toolbar{display:flex;gap:7px;padding-bottom:13px;border-bottom:1px solid var(--line)}.button{padding:8px 11px;border-radius:9px;background:#edf2f7;color:#34455d;font-size:12px;font-weight:750}.primary{background:var(--blue);color:#fff}.canvas{height:510px;margin-top:14px;border:2px dashed #e1eaf2;border-radius:13px;background-image:radial-gradient(#dce5ed 1px,transparent 1px);background-size:20px 20px;position:relative;overflow:auto}.connections{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}.connections line{stroke:#6f8fd2;stroke-width:.42;stroke-linecap:round;opacity:.9}.connections circle{fill:#fff;stroke:#3869e8;stroke-width:.4}.entity,.relation{z-index:2}.entity{position:absolute;min-width:145px;max-width:190px;background:#fff;border:2px solid var(--blue);border-radius:11px;box-shadow:0 5px 14px #233c5920;overflow:hidden}.entity header{padding:9px 10px;background:#edf3ff;font-weight:850;font-size:13px}.entity ul{margin:0;padding:5px 10px;list-style:none;font-size:12px;line-height:1.7}.entity li:first-child{font-weight:800}.remove{float:right;background:transparent;color:#758398;font-size:15px}.relation{position:absolute;padding:7px 10px;border:2px solid var(--gold);border-radius:9px;background:#fff4d8;font-size:11px;font-weight:800}.relation small{display:block;color:#856400;font-weight:500}.tip{position:absolute;z-index:3;bottom:12px;left:12px;padding:9px;border-radius:8px;background:#172d48;color:#fff;font-size:11px}.panel{display:none}.panel.show{display:block}.info{margin-top:14px;padding:13px;border-left:4px solid var(--gold);border-radius:8px;background:#fff8e6;line-height:1.5}.schema{width:100%;margin-top:14px;border-collapse:collapse;font-size:13px}.schema th,.schema td{padding:10px;border:1px solid #cad8e5;text-align:left;vertical-align:top}.schema th{background:#eaf0ff}.key{color:#9d5a00;font-weight:800}.code{margin-top:14px;padding:18px;border-radius:12px;background:#172d48;color:#dff8ff;white-space:pre-wrap;overflow:auto;font:12px ui-monospace,monospace;line-height:1.65}.coach{padding:16px}.coach h3{margin:0 0 10px;font-size:15px}.status{padding:12px;border-radius:12px;background:#eef5ff;font-size:12px;line-height:1.45}.score{float:left;display:grid;place-items:center;width:42px;height:42px;margin-right:11px;border:5px solid #cbddff;border-top-color:var(--blue);border-radius:50%;font-size:10px;font-weight:900}.section{margin-top:15px;padding-top:14px;border-top:1px solid var(--line)}.section label{display:block;margin:8px 0 5px;font-size:12px;font-weight:750}.section input,.section textarea,.section select{width:100%;padding:8px;border:1px solid #cbd7e4;border-radius:8px;background:#fff;font-size:12px}.section textarea{min-height:70px;resize:vertical}.json{margin-top:8px;padding:9px;border-radius:8px;background:#f6f8fb;color:#2352a9;word-break:break-word;font:11px ui-monospace,monospace}.record{padding:7px 4px;border-bottom:1px solid var(--line);font:11px ui-monospace,monospace;color:#3b4d65}.modal{position:fixed;inset:0;z-index:5;display:grid;place-items:center;padding:16px;background:#11213d99}.modal.hidden{display:none}.box{width:min(540px,100%);max-height:90vh;overflow:auto;padding:25px;border-radius:18px;background:#fff;box-shadow:0 20px 65px #0005}.box h2{margin:4px 0 8px}.form{display:grid;gap:9px}.form label{font-size:12px;font-weight:700}.form input,.form select{width:100%;padding:9px;border:1px solid #cbd7e4;border-radius:8px}.tour{padding:13px;border-radius:11px;background:#eff4ff;line-height:1.75}.actions{display:flex;justify-content:space-between;gap:10px;margin-top:16px}.toast{display:none;position:fixed;bottom:18px;left:50%;z-index:9;transform:translateX(-50%);padding:11px 15px;border-radius:10px;background:#172d48;color:#fff;font-size:12px}.toast.show{display:block}@media(max-width:1050px){.layout{grid-template-columns:200px 1fr}.coach{grid-column:1/-1}}@media(max-width:680px){.app{padding:12px}.top{grid-template-columns:1fr auto;gap:10px}.top .modes{grid-column:1/-1;grid-row:2;justify-self:start}.layout{display:block}.nav{display:flex;overflow:auto;margin-bottom:12px}.nav button{min-width:145px}.mission{display:none}.canvas{height:440px}.top-status{display:none}}
+    /* Fokusmodus: Canvas und Coach statt doppelter Seitennavigation */
+    .layout{grid-template-columns:minmax(0,1fr) 330px}
+    .entity,.relation{cursor:grab;touch-action:none;user-select:none}
+    .entity.dragging,.relation.dragging{cursor:grabbing;opacity:.9;box-shadow:0 14px 28px #17365235}
+    @media(max-width:1050px){.layout{grid-template-columns:1fr}.coach{grid-column:auto}}
   </style>
 </head>
 <body>
 <div class="app">
   <header class="top"><div class="brand"><div class="logo">ER</div><div><h1>ER Lab</h1><p class="muted">Modellieren · übersetzen · verstehen</p></div></div><div class="modes" aria-label="Darstellung wechseln"><button class="active" data-mode="er">ER-Diagramm</button><button data-mode="table">Relationen</button><button data-mode="oop">OOP-Klassen</button></div><span class="muted top-status">● Lokal im Browser gespeichert</span></header>
   <div class="layout">
-    <aside class="card nav">
-      <button class="active" data-step="0"><span class="badge">1</span>Entdecken</button><button data-step="1"><span class="badge">2</span>ER-Modell</button><button data-step="2"><span class="badge">3</span>Relationen</button><button data-step="3"><span class="badge">4</span>OOP-Klassen</button><button data-step="4"><span class="badge">5</span>Normalisieren</button>
-      <div class="mission"><b>🎯 Mission</b><br>Modelliere eine Schulbibliothek: Wer leiht welches Buch aus?<br><span class="muted">Ca. 6–10 Minuten</span></div>
-    </aside>
     <main>
       <section class="card hero"><div><h2 id="title">Baue dein ER-Modell</h2><p class="muted" id="sub">Starte mit Dingen aus der echten Welt – noch ohne Tabellen.</p></div></section>
       <section class="card work"><div class="toolbar"><button class="button primary" id="addEntity">＋ Entität</button><button class="button" id="addRelation">◇ Relation</button><button class="button" id="addAttribute">＋ Attribut</button><button class="button" id="reset" style="margin-left:auto">↺ Reset</button></div><div class="canvas" id="erPanel"></div><div class="panel" id="tablePanel"></div><div class="panel" id="oopPanel"></div></section>
@@ -43,24 +44,67 @@ function escapeHtml(value) { return String(value).replace(/[&<>"']/g, c => ({"&"
 function saveData() { localStorage.setItem(storeKey, JSON.stringify(data)); updateCoach(); }
 function entityName(id) { const entity = data.entities.find(e => e.id === id); return entity ? entity.name : id; }
 function showToast(text) { $("#toast").textContent = text; $("#toast").classList.add("show"); setTimeout(() => $("#toast").classList.remove("show"), 2200); }
+function ensureLayout() {
+  data.entities.forEach((entity, index) => {
+    if (typeof entity.x !== "number") entity.x = 5 + (index % 3) * 32;
+    if (typeof entity.y !== "number") entity.y = 9 + Math.floor(index / 3) * 43;
+  });
+  data.relations.forEach((relation, index) => {
+    if (!relation.id) relation.id = "rel-" + index + "-" + relation.from + "-" + relation.to;
+    if (typeof relation.x !== "number") relation.x = 34 + index * 24;
+    if (typeof relation.y !== "number") relation.y = 38 + (index % 2) * 9;
+  });
+}
+function renderConnections() {
+  const svg = $(".connections"); if (!svg) return;
+  svg.innerHTML = data.relations.map(relation => {
+    const from = data.entities.find(entity => entity.id === relation.from);
+    const to = data.entities.find(entity => entity.id === relation.to);
+    if (!from || !to) return "";
+    const middleX = relation.x + 8, middleY = relation.y + 4;
+    return '<line x1="' + (from.x + 10) + '" y1="' + (from.y + 11) + '" x2="' + middleX + '" y2="' + middleY + '"/><line x1="' + middleX + '" y1="' + middleY + '" x2="' + (to.x + 10) + '" y2="' + (to.y + 11) + '"/><circle cx="' + (from.x + 10) + '" cy="' + (from.y + 11) + '" r="1"/><circle cx="' + (to.x + 10) + '" cy="' + (to.y + 11) + '" r="1"/>';
+  }).join("");
+}
+function enableDragging() {
+  const panel = $("#erPanel");
+  $$("[data-drag]").forEach(element => element.onpointerdown = event => {
+    if (event.target.closest(".remove")) return;
+    const kind = element.dataset.drag, id = element.dataset.dragId;
+    const item = kind === "entity" ? data.entities.find(entity => entity.id === id) : data.relations.find(relation => relation.id === id);
+    if (!item) return;
+    const rect = panel.getBoundingClientRect();
+    const offsetX = event.clientX - rect.left - item.x / 100 * rect.width;
+    const offsetY = event.clientY - rect.top - item.y / 100 * rect.height;
+    element.setPointerCapture(event.pointerId); element.classList.add("dragging");
+    const move = pointer => {
+      const maxX = kind === "entity" ? 79 : 88, maxY = kind === "entity" ? 82 : 90;
+      item.x = Math.max(1, Math.min(maxX, (pointer.clientX - rect.left - offsetX) / rect.width * 100));
+      item.y = Math.max(2, Math.min(maxY, (pointer.clientY - rect.top - offsetY) / rect.height * 100));
+      element.style.left = item.x + "%"; element.style.top = item.y + "%"; renderConnections();
+    };
+    const stop = () => { element.classList.remove("dragging"); saveData(); };
+    element.onpointermove = move; element.onpointerup = stop; element.onpointercancel = stop;
+  });
+}
 function renderER() {
   const panel = $("#erPanel");
   if (!data.entities.length) { panel.innerHTML = '<div style="display:grid;place-items:center;height:100%;color:#66778d;text-align:center">Dein Modell ist leer.<br>Lege eine erste Entität an.</div>'; return; }
-  const positions = new Map(data.entities.map((entity, index) => [entity.id, {left:5 + (index % 3) * 32, top:9 + Math.floor(index / 3) * 43}]));
+  ensureLayout();
+  const positions = new Map(data.entities.map(entity => [entity.id, {left:entity.x, top:entity.y}]));
   const entities = data.entities.map((entity) => {
     const position = positions.get(entity.id), left = position.left, top = position.top;
     const attributes = entity.attrs.map(attr => "<li>" + escapeHtml(attr) + "</li>").join("");
-    return '<article class="entity" style="left:' + left + '%;top:' + top + '%"><header>' + escapeHtml(entity.name) + '<button class="remove" data-delete="' + entity.id + '">×</button></header><ul>' + attributes + "</ul></article>";
+    return '<article class="entity" data-drag="entity" data-drag-id="' + entity.id + '" style="left:' + left + '%;top:' + top + '%"><header>' + escapeHtml(entity.name) + '<button class="remove" data-delete="' + entity.id + '">×</button></header><ul>' + attributes + "</ul></article>";
   }).join("");
-  const relationLayout = data.relations.map((relation, index) => {
+  const relationLayout = data.relations.map((relation) => {
     const from = positions.get(relation.from), to = positions.get(relation.to);
-    return {relation, from, to, left:(from.left + to.left) / 2 + (index % 2 ? 4 : -6), top:(from.top + to.top) / 2 + 18 + (index % 3) * 5};
+    return {relation, from, to, left:relation.x, top:relation.y};
   });
   const lines = relationLayout.map(item => {
     const middleX = item.left + 8, middleY = item.top + 4;
     return '<line x1="' + (item.from.left + 10) + '" y1="' + (item.from.top + 11) + '" x2="' + middleX + '" y2="' + middleY + '"/><line x1="' + middleX + '" y1="' + middleY + '" x2="' + (item.to.left + 10) + '" y2="' + (item.to.top + 11) + '"/><circle cx="' + (item.from.left + 10) + '" cy="' + (item.from.top + 11) + '" r="1"/><circle cx="' + (item.to.left + 10) + '" cy="' + (item.to.top + 11) + '" r="1"/>';
   }).join("");
-  const relations = relationLayout.map(item => '<div class="relation" style="left:' + item.left + '%;top:' + item.top + '%">◇ ' + escapeHtml(item.relation.name) + "<small>" + escapeHtml(entityName(item.relation.from)) + " " + item.relation.card + " " + escapeHtml(entityName(item.relation.to)) + "</small></div>").join("");
+  const relations = relationLayout.map(item => '<div class="relation" data-drag="relation" data-drag-id="' + item.relation.id + '" style="left:' + item.left + '%;top:' + item.top + '%">◇ ' + escapeHtml(item.relation.name) + "<small>" + escapeHtml(entityName(item.relation.from)) + " " + item.relation.card + " " + escapeHtml(entityName(item.relation.to)) + "</small></div>").join("");
   panel.innerHTML = '<svg class="connections" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">' + lines + "</svg>" + entities + relations + '<div class="tip"><b style="color:#7de7f5">Tipp:</b> Beziehungen mit Verben benennen; Kardinalitäten erklären „wie viele?“</div>';
   $$("[data-delete]").forEach(button => button.onclick = () => {
     const id = button.dataset.delete;
@@ -68,6 +112,7 @@ function renderER() {
     data.relations = data.relations.filter(relation => relation.from !== id && relation.to !== id);
     saveData(); render(); showToast("Entität entfernt.");
   });
+  enableDragging();
 }
 function renderTable() {
   const headers = data.entities.map(entity => "<th>" + escapeHtml(entity.name) + "</th>").join("");
