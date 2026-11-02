@@ -35,6 +35,7 @@
     .entity{overflow:visible}.entity header{border-radius:9px 9px 0 0}.rel-port{position:absolute;right:-14px;top:50%;z-index:5;display:grid;place-items:center;width:27px;height:27px;transform:translateY(-50%);border:2px solid #fff;border-radius:50%;background:#3869e8;color:#fff;font-size:18px;font-weight:800;box-shadow:0 3px 9px #17365233}.rel-port:hover{background:#00a9c6;transform:translateY(-50%) scale(1.12)}
     .relation-helper{position:absolute;z-index:6;top:12px;right:12px;display:flex;align-items:center;gap:8px;padding:9px 10px;border:1px solid #c9d9f1;border-radius:10px;background:#fff;box-shadow:0 5px 16px #1736521c;font-size:12px}.relation-helper b{color:#2453c9}
     .attribute-editor{margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:10px;background:#f8faff}.attribute-row{display:grid;grid-template-columns:minmax(120px,1fr) 150px minmax(150px,1fr) 34px;gap:7px;align-items:center;margin:7px 0}.attribute-row input,.attribute-row select{width:100%;padding:8px;border:1px solid #cbd7e4;border-radius:7px;background:#fff}.attribute-row .delete-attribute{width:32px;height:32px;padding:0;color:#ad3d32}.attribute-add{display:flex;gap:8px;margin-top:10px}.attribute-add input{flex:1}@media(max-width:600px){.attribute-row{grid-template-columns:1fr 1fr 32px}.attribute-row .fk-reference{grid-column:1/-1}}
+    .relation{width:104px;height:104px;display:grid;place-items:center;padding:0;border-radius:7px;transform:rotate(45deg);overflow:visible}.relation-content{width:142px;transform:rotate(-45deg);text-align:center;line-height:1.25}.relation-content b{display:block;font-size:12px}.relation-content small{display:block;margin-top:4px;font-size:10px;line-height:1.25}.connections line{stroke:#6f8fd2;stroke-width:.46}.connections circle{r:1.15}
     .schema-card{margin-top:14px;border:1px solid var(--line);border-radius:12px;overflow:hidden}.schema-card h3{margin:0;padding:10px 12px;background:#edf3ff;font-size:14px}.schema-card table{width:100%;border-collapse:collapse;font-size:12px}.schema-card td,.schema-card th{padding:8px 11px;border-top:1px solid var(--line);text-align:left}.schema-card th{color:var(--muted);font-weight:700}.export-list{display:grid;gap:9px;margin-top:15px}.export-list .button{text-align:left;padding:11px 12px}.uml-canvas{height:440px;position:relative;margin-top:14px;overflow:hidden;border:2px dashed #dce6f0;border-radius:12px;background:#fafcff}.uml-class{position:absolute;z-index:2;min-width:170px;border:2px solid #617eaa;border-radius:8px;background:white;box-shadow:0 4px 10px #17365218}.uml-class h4{margin:0;padding:8px 10px;border-bottom:1px solid var(--line);text-align:center;background:#f0f5fc}.uml-class ul{list-style:none;margin:0;padding:8px 10px;font:12px ui-monospace,monospace;line-height:1.65}.uml-links{position:absolute;inset:0;width:100%;height:100%;z-index:1}.uml-links line{stroke:#617eaa;stroke-width:1.5}.uml-links text{fill:#3d587d;font-size:11px}.code-tools{display:flex;align-items:center;gap:9px;margin-top:14px}.code-tools select{padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff}
   </style>
 </head>
@@ -158,13 +159,18 @@ function ensureLayout() {
   });
 }
 function renderConnections() {
-  const svg = $(".connections"); if (!svg) return;
+  const panel = $("#erPanel"), svg = $(".connections"); if (!panel || !svg) return;
+  const bounds = panel.getBoundingClientRect();
+  if (!bounds.width || !bounds.height) return;
+  svg.setAttribute("viewBox", "0 0 " + bounds.width + " " + bounds.height);
+  const center = element => { const box = element.getBoundingClientRect(); return {x:box.left - bounds.left + box.width / 2, y:box.top - bounds.top + box.height / 2}; };
   svg.innerHTML = data.relations.map(relation => {
-    const from = data.entities.find(entity => entity.id === relation.from);
-    const to = data.entities.find(entity => entity.id === relation.to);
-    if (!from || !to) return "";
-    const middleX = relation.x + 8, middleY = relation.y + 4;
-    return '<line x1="' + (from.x + 10) + '" y1="' + (from.y + 11) + '" x2="' + middleX + '" y2="' + middleY + '"/><line x1="' + middleX + '" y1="' + middleY + '" x2="' + (to.x + 10) + '" y2="' + (to.y + 11) + '"/><circle cx="' + (from.x + 10) + '" cy="' + (from.y + 11) + '" r="1"/><circle cx="' + (to.x + 10) + '" cy="' + (to.y + 11) + '" r="1"/>';
+    const from = panel.querySelector('[data-drag="entity"][data-drag-id="' + relation.from + '"]');
+    const to = panel.querySelector('[data-drag="entity"][data-drag-id="' + relation.to + '"]');
+    const diamond = panel.querySelector('[data-drag="relation"][data-drag-id="' + relation.id + '"]');
+    if (!from || !to || !diamond) return "";
+    const a = center(from), b = center(to), r = center(diamond);
+    return '<line x1="' + a.x + '" y1="' + a.y + '" x2="' + r.x + '" y2="' + r.y + '"/><line x1="' + r.x + '" y1="' + r.y + '" x2="' + b.x + '" y2="' + b.y + '"/>';
   }).join("");
 }
 function enableDragging() {
@@ -218,13 +224,9 @@ function renderER() {
     const from = positions.get(relation.from), to = positions.get(relation.to);
     return {relation, from, to, left:relation.x, top:relation.y};
   });
-  const lines = relationLayout.map(item => {
-    const middleX = item.left + 8, middleY = item.top + 4;
-    return '<line x1="' + (item.from.left + 10) + '" y1="' + (item.from.top + 11) + '" x2="' + middleX + '" y2="' + middleY + '"/><line x1="' + middleX + '" y1="' + middleY + '" x2="' + (item.to.left + 10) + '" y2="' + (item.to.top + 11) + '"/><circle cx="' + (item.from.left + 10) + '" cy="' + (item.from.top + 11) + '" r="1"/><circle cx="' + (item.to.left + 10) + '" cy="' + (item.to.top + 11) + '" r="1"/>';
-  }).join("");
-  const relations = relationLayout.map(item => '<div class="relation' + (isSelected("relation", item.relation.id) ? " selected" : "") + '" data-drag="relation" data-drag-id="' + item.relation.id + '" style="left:' + item.left + '%;top:' + item.top + '%">◇ ' + escapeHtml(item.relation.name) + "<small>" + escapeHtml(entityName(item.relation.from)) + " " + item.relation.card + " " + escapeHtml(entityName(item.relation.to)) + "</small></div>").join("");
+  const relations = relationLayout.map(item => '<div class="relation' + (isSelected("relation", item.relation.id) ? " selected" : "") + '" data-drag="relation" data-drag-id="' + item.relation.id + '" style="left:' + item.left + '%;top:' + item.top + '%"><div class="relation-content"><b>' + escapeHtml(item.relation.name) + "</b><small>" + escapeHtml(entityName(item.relation.from)) + " " + item.relation.card + " " + escapeHtml(entityName(item.relation.to)) + "</small></div></div>").join("");
   const helper = relationDraft ? '<div class="relation-helper"><span><b>Relation:</b> ' + (relationDraft.from ? escapeHtml(entityName(relationDraft.from)) : "Quelle wählen") + (relationDraft.targets.length ? " → " + relationDraft.targets.map(entityName).map(escapeHtml).join(", ") : "") + '</span><button class="button" id="cancelRelation">Abbrechen</button><button class="button primary" id="configureRelation">Einstellen</button></div>' : "";
-  panel.innerHTML = '<svg class="connections" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">' + lines + "</svg>" + entities + relations + helper + '<div class="tip"><b style="color:#7de7f5">Tipp:</b> Beziehungen mit Verben benennen; Kardinalitäten erklären „wie viele?“</div>';
+  panel.innerHTML = '<svg class="connections" preserveAspectRatio="none" aria-hidden="true"></svg>' + entities + relations + helper + '<div class="tip"><b style="color:#7de7f5">Tipp:</b> Beziehungen mit Verben benennen; Kardinalitäten erklären „wie viele?“</div>';
   $$("[data-delete]").forEach(button => button.onclick = () => {
     const id = button.dataset.delete;
     data.entities = data.entities.filter(entity => entity.id !== id);
@@ -235,6 +237,7 @@ function renderER() {
   $("#cancelRelation")?.addEventListener("click", () => { relationDraft = null; render(); });
   $("#configureRelation")?.addEventListener("click", configureDraftRelation);
   enableDragging();
+  requestAnimationFrame(renderConnections);
 }
 function fieldName(attribute) { return attrName(attribute).trim().replace(/\s+/g, "_"); }
 function sqlType(attribute) {
@@ -457,6 +460,7 @@ function setCoach(open) {
 $("#toggleCoach").onclick = () => setCoach(!$("#coachDrawer").classList.contains("open"));
 $("#closeCoach").onclick = () => setCoach(false);
 $("#drawerBackdrop").onclick = () => setCoach(false);
+window.addEventListener("resize", () => requestAnimationFrame(renderConnections));
 render(); updateCoach();
 </script>
 </body></html>
