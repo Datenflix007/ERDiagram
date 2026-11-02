@@ -36,7 +36,7 @@
 </head>
 <body>
 <div class="app">
-  <header class="top"><div class="brand"><div class="logo">ER</div><div><h1>ER Lab</h1><p class="muted">Modellieren · übersetzen · verstehen</p></div></div><div class="modes" aria-label="Darstellung wechseln"><button class="active" data-mode="er">ER-Diagramm</button><button data-mode="table">Relationen</button><button data-mode="oop">UML & Code</button></div><div class="header-tools"><button class="button primary" id="addEntity">＋ Entität</button><button class="button" id="addRelation">◇ Relation</button><button class="button" id="addAttribute">＋ Attribut</button><button class="button" id="exportModel">⇩ Export</button><button class="button" id="reset" title="Modell zurücksetzen">↺</button><button class="button coach-toggle" id="toggleCoach">☰ Coach</button><span class="muted top-status">● Gespeichert</span></div></header>
+  <header class="top"><div class="brand"><div class="logo">ER</div><div><h1>ER Lab</h1><p class="muted">Modellieren · übersetzen · verstehen</p></div></div><div class="modes" aria-label="Darstellung wechseln"><button class="active" data-mode="er">ER-Diagramm</button><button data-mode="table">Relationen</button><button data-mode="oop">UML & Code</button></div><div class="header-tools"><button class="button" id="newDiagram">＋ Neu</button><button class="button primary" id="addEntity">＋ Entität</button><button class="button" id="addRelation">◇ Relation</button><button class="button" id="addAttribute">＋ Attribut</button><button class="button" id="importModel">⇧ Importieren</button><button class="button" id="exportModel">⇩ Exportieren</button><button class="button" id="reset" title="Beispielmodell laden">↺</button><button class="button coach-toggle" id="toggleCoach">☰ Coach</button><span class="muted top-status">● Gespeichert</span></div></header>
   <div class="layout">
     <main>
       <section class="card hero"><div><h2 id="title">Baue dein ER-Modell</h2><p class="muted" id="sub">Starte mit Dingen aus der echten Welt – noch ohne Tabellen.</p></div></section>
@@ -55,6 +55,7 @@
 <div class="modal hidden" id="editorModal"><div class="box"><span class="muted">Modell bearbeiten</span><h2 id="formTitle">Neue Entität</h2><div class="form" id="formFields"></div><div class="actions"><button class="button" data-close="editorModal">Abbrechen</button><button class="button primary" id="saveForm">Hinzufügen</button></div></div></div>
 <div class="modal hidden" id="exportModal"><div class="box"><span class="muted">Dateien mit Modell und Anordnung</span><h2>Exportieren</h2><p class="muted">JSON enthält das vollständige ER-Modell inklusive der frei gewählten Positionen. SQL und Prolog beschreiben das relationale Schema.</p><div class="export-list"><button class="button primary" id="exportJson">⇩ ER-Modell als JSON</button><button class="button" id="exportSql">⇩ Datenbankschema als SQL</button><button class="button" id="exportProlog">⇩ Datenbankschema als Prolog</button></div><div class="actions"><span></span><button class="button" data-close="exportModal">Schließen</button></div></div></div>
 <div class="toast" id="toast"></div>
+<input id="importFile" type="file" accept="application/json,.json" hidden>
 <script>
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
@@ -287,10 +288,30 @@ $("#convert").onclick = () => {
 $("#check").onclick = () => { $("#feedback").textContent = $("#normal").value === "name" ? "✓ Genau. Der Name hängt von der Schüler-ID ab und gehört in die Entität Schüler:in." : "Noch einmal: Welche Angabe würde sich bei vielen Ausleihen derselben Person wiederholen?"; };
 $("#tutorial").onclick = () => $("#tourModal").classList.remove("hidden");
 $("#reset").onclick = () => { if (confirm("Dein lokales Modell zurücksetzen?")) { data = JSON.parse(JSON.stringify(initial)); saveData(); render(); showToast("Beispielmodell wiederhergestellt."); } };
+$("#newDiagram").onclick = () => {
+  if (!confirm("Ein neues leeres Diagramm anlegen? Das aktuell gespeicherte Modell wird ersetzt.")) return;
+  data = {entities:[], relations:[], records:[]}; selected = null; saveData(); render(); showToast("Neues leeres Diagramm angelegt.");
+};
 $("#exportModel").onclick = () => $("#exportModal").classList.remove("hidden");
 $("#exportJson").onclick = () => downloadFile("er-lab-diagram.json", diagramJSON(), "application/json");
 $("#exportSql").onclick = () => downloadFile("er-lab-schema.sql", sqlSchema(), "text/sql");
 $("#exportProlog").onclick = () => downloadFile("er-lab-schema.pl", prologSchema(), "text/plain");
+$("#importModel").onclick = () => $("#importFile").click();
+$("#importFile").onchange = async event => {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  try {
+    const parsed = JSON.parse(await file.text());
+    const imported = parsed.diagram || parsed;
+    if (!Array.isArray(imported.entities) || !Array.isArray(imported.relations)) throw new Error("invalid");
+    data = {entities:imported.entities, relations:imported.relations, records:Array.isArray(imported.records) ? imported.records : []};
+    selected = null; ensureLayout(); saveData(); render(); showToast("Diagramm importiert: " + data.entities.length + " Entitäten.");
+  } catch {
+    showToast("Import fehlgeschlagen: Bitte eine gültige ER-Lab-JSON-Datei wählen.");
+  } finally {
+    event.target.value = "";
+  }
+};
 document.addEventListener("keydown", event => {
   if (event.key === "Escape") {
     selected = null; $$(".selected").forEach(node => node.classList.remove("selected"));
