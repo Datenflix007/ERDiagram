@@ -63,11 +63,23 @@ const initial = {entities:[{id:"student",name:"Schüler:in",attrs:["schueler_id 
 let data = JSON.parse(localStorage.getItem(storeKey) || JSON.stringify(initial));
 let mode = "er";
 let editing = "";
-let selected = null;
+let editingId = null;
+let selected = [];
+let copiedNodes = null;
 function escapeHtml(value) { return String(value).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 function saveData() { localStorage.setItem(storeKey, JSON.stringify(data)); updateCoach(); }
 function entityName(id) { const entity = data.entities.find(e => e.id === id); return entity ? entity.name : id; }
 function showToast(text) { $("#toast").textContent = text; $("#toast").classList.add("show"); setTimeout(() => $("#toast").classList.remove("show"), 2200); }
+function nodeKey(kind, id) { return kind + ":" + id; }
+function isSelected(kind, id) { return selected.includes(nodeKey(kind, id)); }
+function clearSelection() { selected = []; $$(".selected").forEach(node => node.classList.remove("selected")); }
+function selectNode(kind, id, append) {
+  const key = nodeKey(kind, id);
+  if (append) selected = selected.includes(key) ? selected.filter(item => item !== key) : selected.concat(key);
+  else selected = [key];
+  $$(".selected").forEach(node => node.classList.remove("selected"));
+  selected.forEach(current => document.querySelector('[data-drag="' + current.split(":")[0] + '"][data-drag-id="' + current.slice(current.indexOf(":") + 1) + '"]')?.classList.add("selected"));
+}
 function downloadFile(filename, content, mime) {
   const url = URL.createObjectURL(new Blob([content], {type:mime + ";charset=utf-8"}));
   const link = document.createElement("a"); link.href = url; link.download = filename; link.click();
@@ -76,6 +88,28 @@ function downloadFile(filename, content, mime) {
 function diagramJSON() {
   ensureLayout();
   return JSON.stringify({format:"er-lab/v1", exportedAt:new Date().toISOString(), diagram:data}, null, 2);
+}
+function copySelection() {
+  const entityIds = selected.filter(key => key.startsWith("entity:")).map(key => key.slice(7));
+  const relationIds = selected.filter(key => key.startsWith("relation:")).map(key => key.slice(9));
+  const entities = data.entities.filter(entity => entityIds.includes(entity.id));
+  const relations = data.relations.filter(relation => relationIds.includes(relation.id) || (entityIds.includes(relation.from) && entityIds.includes(relation.to)));
+  if (!entities.length && !relations.length) return;
+  copiedNodes = JSON.parse(JSON.stringify({entities, relations}));
+  navigator.clipboard?.writeText(JSON.stringify({format:"er-lab-clipboard/v1", diagram:copiedNodes})).catch(() => {});
+  showToast((entities.length + relations.length) + " Element(e) kopiert.");
+}
+function pasteSelection() {
+  if (!copiedNodes) { showToast("Noch nichts kopiert. Wähle Elemente und nutze Strg+C."); return; }
+  const stamp = Date.now(), idMap = new Map();
+  const newEntities = copiedNodes.entities.map((entity, index) => {
+    const id = entity.id + "-copy-" + stamp + "-" + index; idMap.set(entity.id, id);
+    return {...entity, id, name:entity.name + " Kopie", x:Math.min(79, (entity.x || 5) + 4), y:Math.min(82, (entity.y || 9) + 4)};
+  });
+  const newRelations = copiedNodes.relations.map((relation, index) => ({...relation, id:"rel-copy-" + stamp + "-" + index, from:idMap.get(relation.from) || relation.from, to:idMap.get(relation.to) || relation.to, x:Math.min(88, (relation.x || 34) + 4), y:Math.min(90, (relation.y || 38) + 4)}));
+  data.entities.push(...newEntities); data.relations.push(...newRelations);
+  selected = newEntities.map(entity => nodeKey("entity", entity.id)).concat(newRelations.map(relation => nodeKey("relation", relation.id)));
+  saveData(); render(); showToast((newEntities.length + newRelations.length) + " Element(e) eingefügt.");
 }
 function ensureLayout() {
   data.entities.forEach((entity, index) => {
@@ -101,13 +135,14 @@ function renderConnections() {
 function enableDragging() {
   const panel = $("#erPanel");
   panel.onpointerdown = event => {
-    if (event.target === panel) { selected = null; $$(".selected").forEach(node => node.classList.remove("selected")); }
+    if (event.target === panel) clearSelection();
   };
   $$("[data-drag]").forEach(element => element.onpointerdown = event => {
     if (event.target.closest(".remove")) return;
     const kind = element.dataset.drag, id = element.dataset.dragId;
     const item = kind === "entity" ? data.entities.find(entity => entity.id === id) : data.relations.find(relation => relation.id === id);
     if (!item) return;
+    selectNode(kind, id, event.ctrlKey || event.metaKey);
     const rect = panel.getBoundingClientRect();
     const offsetX = event.clientX - rect.left - item.x / 100 * rect.width;
     const offsetY = event.clientY - rect.top - item.y / 100 * rect.height;
@@ -122,14 +157,13 @@ function enableDragging() {
     };
     const stop = () => {
       element.classList.remove("dragging");
-      if (!moved) {
-        selected = kind + ":" + id;
-        $$(".selected").forEach(node => node.classList.remove("selected"));
-        element.classList.add("selected");
-      }
       saveData();
     };
     element.onpointermove = move; element.onpointerup = stop; element.onpointercancel = stop;
+  });
+  $$("[data-drag]").forEach(element => element.ondblclick = event => {
+    if (event.target.closest(".remove")) return;
+    openEditor(element.dataset.drag === "entity" ? "editEntity" : "editRelation", element.dataset.dragId);
   });
 }
 function renderER() {
@@ -140,7 +174,7 @@ function renderER() {
   const entities = data.entities.map((entity) => {
     const position = positions.get(entity.id), left = position.left, top = position.top;
     const attributes = entity.attrs.map(attr => "<li>" + escapeHtml(attr) + "</li>").join("");
-    const selectedClass = selected === "entity:" + entity.id ? " selected" : "";
+    const selectedClass = isSelected("entity", entity.id) ? " selected" : "";
     return '<article class="entity' + selectedClass + '" data-drag="entity" data-drag-id="' + entity.id + '" style="left:' + left + '%;top:' + top + '%"><header>' + escapeHtml(entity.name) + '<button class="remove" data-delete="' + entity.id + '">×</button></header><ul>' + attributes + "</ul></article>";
   }).join("");
   const relationLayout = data.relations.map((relation) => {
@@ -151,7 +185,7 @@ function renderER() {
     const middleX = item.left + 8, middleY = item.top + 4;
     return '<line x1="' + (item.from.left + 10) + '" y1="' + (item.from.top + 11) + '" x2="' + middleX + '" y2="' + middleY + '"/><line x1="' + middleX + '" y1="' + middleY + '" x2="' + (item.to.left + 10) + '" y2="' + (item.to.top + 11) + '"/><circle cx="' + (item.from.left + 10) + '" cy="' + (item.from.top + 11) + '" r="1"/><circle cx="' + (item.to.left + 10) + '" cy="' + (item.to.top + 11) + '" r="1"/>';
   }).join("");
-  const relations = relationLayout.map(item => '<div class="relation' + (selected === "relation:" + item.relation.id ? " selected" : "") + '" data-drag="relation" data-drag-id="' + item.relation.id + '" style="left:' + item.left + '%;top:' + item.top + '%">◇ ' + escapeHtml(item.relation.name) + "<small>" + escapeHtml(entityName(item.relation.from)) + " " + item.relation.card + " " + escapeHtml(entityName(item.relation.to)) + "</small></div>").join("");
+  const relations = relationLayout.map(item => '<div class="relation' + (isSelected("relation", item.relation.id) ? " selected" : "") + '" data-drag="relation" data-drag-id="' + item.relation.id + '" style="left:' + item.left + '%;top:' + item.top + '%">◇ ' + escapeHtml(item.relation.name) + "<small>" + escapeHtml(entityName(item.relation.from)) + " " + item.relation.card + " " + escapeHtml(entityName(item.relation.to)) + "</small></div>").join("");
   panel.innerHTML = '<svg class="connections" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">' + lines + "</svg>" + entities + relations + '<div class="tip"><b style="color:#7de7f5">Tipp:</b> Beziehungen mit Verben benennen; Kardinalitäten erklären „wie viele?“</div>';
   $$("[data-delete]").forEach(button => button.onclick = () => {
     const id = button.dataset.delete;
@@ -237,18 +271,21 @@ function updateCoach() {
   $("#coachTitle").textContent = message[0]; $("#coachText").textContent = message[1];
 }
 function input(label, id, placeholder) { return '<label>' + label + '<input id="' + id + '" placeholder="' + placeholder + '" required></label>'; }
-function openEditor(kind) {
-  editing = kind; $("#editorModal").classList.remove("hidden");
-  if (kind === "entity") {
-    $("#formTitle").textContent = "Neue Entität";
-    $("#formFields").innerHTML = input("Name", "entityName", "z. B. Kurs") + input("Attribute (Komma getrennt)", "entityAttrs", "z. B. kurs_id (PK), titel");
+function openEditor(kind, id = null) {
+  editing = kind; editingId = id; $("#editorModal").classList.remove("hidden");
+  if (kind === "entity" || kind === "editEntity") {
+    const entity = kind === "editEntity" ? data.entities.find(item => item.id === id) : null;
+    $("#formTitle").textContent = entity ? "Entität bearbeiten" : "Neue Entität";
+    $("#formFields").innerHTML = '<label>Name<input id="entityName" value="' + escapeHtml(entity?.name || "") + '" placeholder="z. B. Kurs" required></label><label>Attribute (Komma getrennt)<input id="entityAttrs" value="' + escapeHtml(entity?.attrs.join(", ") || "") + '" placeholder="z. B. kurs_id (PK), titel" required></label>';
   } else if (kind === "attribute") {
     $("#formTitle").textContent = "Attribut ergänzen";
     $("#formFields").innerHTML = '<label>Entität<select id="attributeTarget">' + data.entities.map(e => '<option value="' + e.id + '">' + escapeHtml(e.name) + "</option>").join("") + "</select></label>" + input("Attribut", "attributeName", "z. B. geburtsdatum");
   } else {
-    $("#formTitle").textContent = "Neue Relation";
+    const relation = kind === "editRelation" ? data.relations.find(item => item.id === id) : null;
+    $("#formTitle").textContent = relation ? "Relation bearbeiten" : "Neue Relation";
     const options = data.entities.map(e => '<option value="' + e.id + '">' + escapeHtml(e.name) + "</option>").join("");
-    $("#formFields").innerHTML = '<label>Von<select id="relationFrom">' + options + '</select></label><label>Zu<select id="relationTo">' + options + "</select></label>" + input("Name der Beziehung", "relationName", "z. B. belegt") + '<label>Kardinalität<select id="relationCard"><option>1 : 1</option><option>1 : n</option><option>n : m</option></select></label>';
+    $("#formFields").innerHTML = '<label>Von<select id="relationFrom">' + options + '</select></label><label>Zu<select id="relationTo">' + options + '</select></label><label>Name der Beziehung<input id="relationName" value="' + escapeHtml(relation?.name || "") + '" placeholder="z. B. belegt" required></label><label>Kardinalität<select id="relationCard"><option>1 : 1</option><option>1 : n</option><option>n : m</option></select></label>';
+    if (relation) { $("#relationFrom").value = relation.from; $("#relationTo").value = relation.to; $("#relationCard").value = relation.card; }
   }
 }
 $("#saveForm").onclick = () => {
@@ -256,13 +293,22 @@ $("#saveForm").onclick = () => {
     const name = $("#entityName").value.trim(); if (!name) return;
     const attrs = $("#entityAttrs").value.split(",").map(x => x.trim()).filter(Boolean);
     data.entities.push({id:name.toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + Date.now(), name, attrs:attrs.length ? attrs : ["id (PK)"]});
+  } else if (editing === "editEntity") {
+    const entity = data.entities.find(item => item.id === editingId);
+    const name = $("#entityName").value.trim(), attrs = $("#entityAttrs").value.split(",").map(x => x.trim()).filter(Boolean);
+    if (!entity || !name) return; entity.name = name; entity.attrs = attrs.length ? attrs : ["id (PK)"];
   } else if (editing === "attribute") {
     const target = data.entities.find(e => e.id === $("#attributeTarget").value), attr = $("#attributeName").value.trim();
     if (!attr) return; target.attrs.push(attr);
-  } else {
+  } else if (editing === "relation") {
     const from = $("#relationFrom").value, to = $("#relationTo").value, name = $("#relationName").value.trim();
     if (!name || from === to) { showToast("Wähle zwei unterschiedliche Entitäten und einen Namen."); return; }
     data.relations.push({from, to, name, card:$("#relationCard").value});
+  } else if (editing === "editRelation") {
+    const relation = data.relations.find(item => item.id === editingId);
+    const from = $("#relationFrom").value, to = $("#relationTo").value, name = $("#relationName").value.trim();
+    if (!relation || !name || from === to) { showToast("Wähle zwei unterschiedliche Entitäten und einen Namen."); return; }
+    Object.assign(relation, {from, to, name, card:$("#relationCard").value});
   }
   $("#editorModal").classList.add("hidden"); saveData(); render(); showToast("Modell aktualisiert.");
 };
@@ -289,7 +335,7 @@ $("#tutorial").onclick = () => $("#tourModal").classList.remove("hidden");
 $("#reset").onclick = () => { if (confirm("Dein lokales Modell zurücksetzen?")) { data = JSON.parse(JSON.stringify(initial)); saveData(); render(); showToast("Beispielmodell wiederhergestellt."); } };
 $("#newDiagram").onclick = () => {
   if (!confirm("Ein neues leeres Diagramm anlegen? Das aktuell gespeicherte Modell wird ersetzt.")) return;
-  data = {entities:[], relations:[], records:[]}; selected = null; saveData(); render(); showToast("Neues leeres Diagramm angelegt.");
+  data = {entities:[], relations:[], records:[]}; clearSelection(); saveData(); render(); showToast("Neues leeres Diagramm angelegt.");
 };
 $("#exportModel").onclick = () => $("#exportModal").classList.remove("hidden");
 $("#exportJson").onclick = () => downloadFile("er-lab-diagram.json", diagramJSON(), "application/json");
@@ -304,7 +350,7 @@ $("#importFile").onchange = async event => {
     const imported = parsed.diagram || parsed;
     if (!Array.isArray(imported.entities) || !Array.isArray(imported.relations)) throw new Error("invalid");
     data = {entities:imported.entities, relations:imported.relations, records:Array.isArray(imported.records) ? imported.records : []};
-    selected = null; ensureLayout(); saveData(); render(); showToast("Diagramm importiert: " + data.entities.length + " Entitäten.");
+    clearSelection(); ensureLayout(); saveData(); render(); showToast("Diagramm importiert: " + data.entities.length + " Entitäten.");
   } catch {
     showToast("Import fehlgeschlagen: Bitte eine gültige ER-Lab-JSON-Datei wählen.");
   } finally {
@@ -312,8 +358,15 @@ $("#importFile").onchange = async event => {
   }
 };
 document.addEventListener("keydown", event => {
+  const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || "");
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "c" && !typing) {
+    event.preventDefault(); copySelection(); return;
+  }
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "v" && !typing) {
+    event.preventDefault(); pasteSelection(); return;
+  }
   if (event.key === "Escape") {
-    selected = null; $$(".selected").forEach(node => node.classList.remove("selected"));
+    clearSelection();
     ["editorModal", "exportModal", "tourModal"].forEach(id => $("#" + id).classList.add("hidden"));
     setCoach(false);
   }
