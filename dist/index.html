@@ -36,15 +36,16 @@
     .relation-helper{position:absolute;z-index:6;top:12px;right:12px;display:flex;align-items:center;gap:8px;padding:9px 10px;border:1px solid #c9d9f1;border-radius:10px;background:#fff;box-shadow:0 5px 16px #1736521c;font-size:12px}.relation-helper b{color:#2453c9}
     .attribute-editor{margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:10px;background:#f8faff}.attribute-row{display:grid;grid-template-columns:minmax(120px,1fr) 150px minmax(150px,1fr) 34px;gap:7px;align-items:center;margin:7px 0}.attribute-row input,.attribute-row select{width:100%;padding:8px;border:1px solid #cbd7e4;border-radius:7px;background:#fff}.attribute-row .delete-attribute{width:32px;height:32px;padding:0;color:#ad3d32}.attribute-add{display:flex;gap:8px;margin-top:10px}.attribute-add input{flex:1}@media(max-width:600px){.attribute-row{grid-template-columns:1fr 1fr 32px}.attribute-row .fk-reference{grid-column:1/-1}}
     .relation{width:104px;height:104px;display:grid;place-items:center;padding:0;border-radius:7px;transform:rotate(45deg);overflow:visible}.relation-content{width:142px;transform:rotate(-45deg);text-align:center;line-height:1.25}.relation-content b{display:block;font-size:12px}.relation-content small{display:block;margin-top:4px;font-size:10px;line-height:1.25}.connections line{stroke:#6f8fd2;stroke-width:.46}.connections circle{r:1.15}
+    .data-toolbar{display:flex;align-items:center;gap:10px;margin-top:14px}.data-toolbar select{min-width:180px;padding:9px;border:1px solid var(--line);border-radius:8px;background:#fff}.data-grid{width:100%;margin-top:14px;border-collapse:separate;border-spacing:0;border:1px solid var(--line);border-radius:10px;overflow:hidden}.data-grid th{padding:10px;background:#edf3ff;text-align:left;font-size:12px}.data-grid td{padding:5px;border-top:1px solid var(--line)}.data-grid input{width:100%;padding:7px;border:1px solid transparent;border-radius:6px;background:transparent}.data-grid input:focus{border-color:#9db8f3;background:#fff;outline:0}.data-empty{margin-top:14px;padding:35px;border:1px dashed var(--line);border-radius:10px;text-align:center;color:var(--muted)}
     .schema-card{margin-top:14px;border:1px solid var(--line);border-radius:12px;overflow:hidden}.schema-card h3{margin:0;padding:10px 12px;background:#edf3ff;font-size:14px}.schema-card table{width:100%;border-collapse:collapse;font-size:12px}.schema-card td,.schema-card th{padding:8px 11px;border-top:1px solid var(--line);text-align:left}.schema-card th{color:var(--muted);font-weight:700}.export-list{display:grid;gap:9px;margin-top:15px}.export-list .button{text-align:left;padding:11px 12px}.uml-canvas{height:440px;position:relative;margin-top:14px;overflow:hidden;border:2px dashed #dce6f0;border-radius:12px;background:#fafcff}.uml-class{position:absolute;z-index:2;min-width:170px;border:2px solid #617eaa;border-radius:8px;background:white;box-shadow:0 4px 10px #17365218}.uml-class h4{margin:0;padding:8px 10px;border-bottom:1px solid var(--line);text-align:center;background:#f0f5fc}.uml-class ul{list-style:none;margin:0;padding:8px 10px;font:12px ui-monospace,monospace;line-height:1.65}.uml-links{position:absolute;inset:0;width:100%;height:100%;z-index:1}.uml-links line{stroke:#617eaa;stroke-width:1.5}.uml-links text{fill:#3d587d;font-size:11px}.code-tools{display:flex;align-items:center;gap:9px;margin-top:14px}.code-tools select{padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff}
   </style>
 </head>
 <body>
 <div class="app">
-  <header class="top"><div class="brand"><div class="logo">ER</div><div><h1>ER Lab</h1><p class="muted">Modellieren · übersetzen · verstehen</p></div></div><div class="modes" aria-label="Darstellung wechseln"><button class="active" data-mode="er">ER-Diagramm</button><button data-mode="table">Relationen</button><button data-mode="oop">UML & Code</button></div><div class="header-tools"><button class="button" id="newDiagram">＋ Neu</button><button class="button primary" id="addEntity">＋ Entität</button><button class="button" id="addRelation">◇ Relation</button><button class="button" id="addAttribute">＋ Attribut</button><button class="button" id="importModel">⇧ Importieren</button><button class="button" id="exportModel">⇩ Exportieren</button><button class="button" id="reset" title="Beispielmodell laden">↺</button><button class="button coach-toggle" id="toggleCoach">☰ Coach</button><span class="muted top-status">● Gespeichert</span></div></header>
+  <header class="top"><div class="brand"><div class="logo">ER</div><div><h1>ER Lab</h1><p class="muted">Modellieren · übersetzen · verstehen</p></div></div><div class="modes" aria-label="Darstellung wechseln"><button class="active" data-mode="er">ER-Diagramm</button><button data-mode="table">Relationen</button><button data-mode="data">Datenbrowser</button><button data-mode="oop">UML & Code</button></div><div class="header-tools"><button class="button" id="newDiagram">＋ Neu</button><button class="button primary" id="addEntity">＋ Entität</button><button class="button" id="addRelation">◇ Relation</button><button class="button" id="addAttribute">＋ Attribut</button><button class="button" id="importModel">⇧ Importieren</button><button class="button" id="exportModel">⇩ Exportieren</button><button class="button" id="reset" title="Beispielmodell laden">↺</button><button class="button coach-toggle" id="toggleCoach">☰ Coach</button><span class="muted top-status">● Gespeichert</span></div></header>
   <div class="layout">
     <main>
-      <section class="card work"><div class="canvas" id="erPanel"></div><div class="panel" id="tablePanel"></div><div class="panel" id="oopPanel"></div></section>
+      <section class="card work"><div class="canvas" id="erPanel"></div><div class="panel" id="tablePanel"></div><div class="panel" id="dataPanel"></div><div class="panel" id="oopPanel"></div></section>
     </main>
     <aside class="card coach drawer" id="coachDrawer" aria-label="Feedback-Coach">
       <div class="drawer-head"><h3>Feedback-Coach</h3><button class="button" id="closeCoach" aria-label="Coach schließen">×</button></div><div class="status"><span class="score" id="score">65%</span><b id="coachTitle">Guter Start!</b><br><span id="coachText">Lege mindestens zwei Entitäten und eine Beziehung an.</span></div>
@@ -278,6 +279,25 @@ function renderTable() {
   $("#downloadSql").onclick = () => downloadFile("er-lab-schema.sql", sqlSchema(), "text/sql");
   $("#downloadProlog").onclick = () => downloadFile("er-lab-schema.pl", prologSchema(), "text/plain");
 }
+function ensureDataRows() {
+  if (!data.rows || typeof data.rows !== "object") data.rows = {};
+  data.entities.forEach(entity => { if (!Array.isArray(data.rows[entity.id])) data.rows[entity.id] = []; });
+}
+function renderDataBrowser() {
+  ensureDataRows();
+  const panel = $("#dataPanel");
+  if (!data.entities.length) { panel.innerHTML = '<div class="data-empty">Lege erst eine Entität an, damit daraus eine Tabelle für Datensätze entsteht.</div>'; return; }
+  const selectedTable = data.activeTable && data.entities.some(entity => entity.id === data.activeTable) ? data.activeTable : data.entities[0].id;
+  data.activeTable = selectedTable;
+  const entity = data.entities.find(item => item.id === selectedTable), fields = entity.attrs.map(fieldName), rows = data.rows[selectedTable];
+  const options = data.entities.map(item => '<option value="' + item.id + '"' + (item.id === selectedTable ? " selected" : "") + '>' + escapeHtml(item.name) + "</option>").join("");
+  const body = rows.map((row, index) => "<tr>" + fields.map(field => '<td><input data-row="' + index + '" data-field="' + field + '" value="' + escapeHtml(row[field] || "") + '"></td>').join("") + '<td><button class="button delete-row" data-delete-row="' + index + '">×</button></td></tr>').join("");
+  panel.innerHTML = '<div class="info"><b>Datenbrowser:</b> Eine browserlokale Tabellenansicht zum Anlegen und Prüfen von Datensätzen – ähnlich einer vereinfachten Workbench.</div><div class="data-toolbar"><label>Tabelle <select id="dataTable">' + options + '</select></label><button class="button primary" id="addRecord">＋ Datensatz</button><span class="muted">' + rows.length + " Zeile(n)</span></div>" + (rows.length ? '<table class="data-grid"><thead><tr>' + fields.map(field => "<th>" + escapeHtml(field) + "</th>").join("") + "<th></th></tr></thead><tbody>" + body + "</tbody></table>" : '<div class="data-empty">Noch keine Datensätze. Lege die erste Zeile an.</div>');
+  $("#dataTable").onchange = event => { data.activeTable = event.target.value; saveData(); renderDataBrowser(); };
+  $("#addRecord").onclick = () => { data.rows[selectedTable].push(Object.fromEntries(fields.map(field => [field, ""]))); saveData(); renderDataBrowser(); };
+  $$("[data-row]").forEach(input => input.onchange = () => { data.rows[selectedTable][Number(input.dataset.row)][input.dataset.field] = input.value; saveData(); });
+  $$("[data-delete-row]").forEach(button => button.onclick = () => { data.rows[selectedTable].splice(Number(button.dataset.deleteRow), 1); saveData(); renderDataBrowser(); });
+}
 function className(entity) { return entity.name.replace(/[^a-zA-Z0-9]/g, "") || "Entity"; }
 function codeType(attribute, language) {
   const base = sqlType(attribute);
@@ -307,9 +327,10 @@ function renderOOP() {
   $("#exportCode").onclick = () => { const language = $("#codeLanguage").value, ext = {java:"java",python:"py",csharp:"cs",cpp:"cpp"}[language]; downloadFile("er-lab-classes." + ext, generatedCode(language), "text/plain"); };
 }
 function render() {
-  renderER(); renderTable(); renderOOP();
+  renderER(); renderTable(); renderDataBrowser(); renderOOP();
   $("#erPanel").style.display = mode === "er" ? "block" : "none";
   $("#tablePanel").classList.toggle("show", mode === "table");
+  $("#dataPanel").classList.toggle("show", mode === "data");
   $("#oopPanel").classList.toggle("show", mode === "oop");
 }
 function updateCoach() {
